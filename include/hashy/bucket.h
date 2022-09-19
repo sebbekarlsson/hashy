@@ -16,10 +16,10 @@ typedef struct {
   bool initialized;
 } HashyBucket;
 
+int hashy_bucket_clear(HashyBucket* bucket, bool free_values);
 
 typedef struct HASHY_BUCKET_BUFFER {
-  int64_t avail;
-  int64_t used;
+  int64_t length;
   HashyBucket* items;
   bool initialized;
   int64_t capacity;
@@ -33,9 +33,8 @@ void hashy_bucket_buffer_init(HashyBucketBuffer* buffer, int64_t capacity);
 
 int hashy_bucket_buffer_grow(HashyBucketBuffer* buffer, int64_t length);
 
-void hashy_bucket_buffer_clear(HashyBucketBuffer* buffer);
-
-HashyBucket* hashy_bucket_buffer_set(HashyBucketBuffer* buffer, HashyBucket bucket, uint64_t index);
+void hashy_bucket_buffer_clear(HashyBucketBuffer* buffer, bool free_values);
 
 HashyBucket* hashy_bucket_buffer_get(HashyBucketBuffer* buffer, uint64_t index);
+
 #endif
