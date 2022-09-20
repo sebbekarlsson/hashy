@@ -322,6 +322,37 @@ void test_set_vectors() {
   hashy_map_clear(&map, true);
 }
 
+void test_get_keys() {
+  HashyMap map = {0};
+  hashy_map_init(&map, 256);
+
+  int64_t nr_items = 125;
+
+
+
+  for (int64_t i = 0; i < nr_items; i++) {
+    char tmp[256];
+    sprintf(tmp, "item_%ld", i);
+    char* x = strdup("123");
+    hashy_map_set(&map, tmp, x);
+  }
+
+
+
+  HashyKeyList list = {0};
+  hashy_map_get_keys(&map, &list);
+
+  HASHY_ASSERT(list.length == nr_items);
+  HASHY_ASSERT(list.items != 0);
+
+  hashy_key_list_clear(&list);
+
+  HASHY_ASSERT(list.items == 0);
+  HASHY_ASSERT(list.length == 0);
+  HASHY_ASSERT(list.avail == 0);
+  HASHY_ASSERT(list.total_length == 0);
+}
+
 int main(int argc, char* argv[]) {
 
   srand(time(0));
@@ -332,6 +363,7 @@ int main(int argc, char* argv[]) {
   test_unset_without_values();
   test_set_clear_and_get();
   test_set_vectors();
+  test_get_keys();
 
   return 0;
 }

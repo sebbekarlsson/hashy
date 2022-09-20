@@ -5,6 +5,9 @@
 #include <stdlib.h>
 
 
+
+
+
 void hashy_map_init(HashyMap* map, int64_t capacity) {
   if (!map) return;
   if (map->initialized) HASHY_WARNING_RETURN(, stderr, "map already initialized.\n");
@@ -25,6 +28,13 @@ static uint64_t hashy_hash(const char* value) {
   }
 
   return hash;
+}
+
+
+HashyMap* hashy_map_get_root(HashyMap* map) {
+  if (!map) return 0;
+  if (!map->root) return map;
+  return hashy_map_get_root(map->root);
 }
 
 void* hashy_map_set(HashyMap* map, const char* key, void* value) {
@@ -50,12 +60,12 @@ void* hashy_map_set(HashyMap* map, const char* key, void* value) {
       map->used += 1;
     }
     bucket->key = strdup(key);
-
   }
 
   if (collision) {
     if (!bucket->map) {
       bucket->map = NEW(HashyMap);
+      bucket->map->root = map;
       hashy_map_init(bucket->map, (map->capacity + (map->capacity / 2)));
     }
     return hashy_map_set(bucket->map, key, value);
@@ -129,4 +139,26 @@ void* hashy_map_unset(HashyMap* map, const char* key) {
   map->used = MAX(0, map->used - 1);
 
   return value;
+}
+
+int hashy_map_get_keys(HashyMap* map, HashyKeyList* out) {
+  if (!map || !out) return 0;
+  if (!out->initialized) {
+    hashy_key_list_init(out, map->capacity / 2);
+  }
+
+
+  for (int64_t i = 0; i < map->buckets.length; i++) {
+    HashyBucket bucket = map->buckets.items[i];
+
+    if (bucket.key != 0) {
+      hashy_key_list_push(out, bucket.key);
+    }
+
+    if (bucket.map != 0) {
+      hashy_map_get_keys(bucket.map, out);
+    }
+  }
+
+  return out->length > 0;
 }
