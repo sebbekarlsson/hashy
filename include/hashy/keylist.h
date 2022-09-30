@@ -4,11 +4,9 @@
 #include <stdbool.h>
 typedef struct {
   char** items;
-  int64_t used;
   int64_t avail;
   int64_t capacity;
   int64_t length;
-  int64_t total_length;
   bool initialized;
 } HashyKeyList;
 

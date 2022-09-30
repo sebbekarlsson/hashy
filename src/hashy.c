@@ -146,7 +146,7 @@ int hashy_map_get_keys(HashyMap* map, HashyKeyList* out) {
   if (!out->initialized) {
     hashy_key_list_init(out, map->capacity / 2);
   }
-
+  if (map->buckets.length <= 0) return 0;
 
   for (int64_t i = 0; i < map->buckets.length; i++) {
     HashyBucket bucket = map->buckets.items[i];

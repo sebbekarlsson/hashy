@@ -350,7 +350,9 @@ void test_get_keys() {
   HASHY_ASSERT(list.items == 0);
   HASHY_ASSERT(list.length == 0);
   HASHY_ASSERT(list.avail == 0);
-  HASHY_ASSERT(list.total_length == 0);
+  HASHY_ASSERT(list.length == 0);
+
+  hashy_map_clear(&map, true);
 }
 
 int main(int argc, char* argv[]) {
