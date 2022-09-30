@@ -13,6 +13,7 @@ typedef struct {
 void hashy_key_list_init(HashyKeyList* list, int64_t capacity);
 int hashy_key_list_grow(HashyKeyList* list);
 int hashy_key_list_push(HashyKeyList* list, const char* key);
+int hashy_key_list_remove(HashyKeyList* list, const char* key);
 void hashy_key_list_clear(HashyKeyList* list);
 
 #endif

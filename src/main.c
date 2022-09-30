@@ -355,8 +355,48 @@ void test_get_keys() {
   hashy_map_clear(&map, true);
 }
 
+void test_get_keys2() {
+  HashyMap map = {0};
+  hashy_map_init_v2(&map, (HashyMapConfig){ .capacity = 256, .remember_keys = false });
+
+  int64_t nr_items = 125;
+
+
+
+  for (int64_t i = 0; i < nr_items; i++) {
+    char tmp[256];
+    sprintf(tmp, "item_%ld", i);
+    char* x = strdup(tmp);
+    hashy_map_set(&map, tmp, x);
+  }
+
+
+  char* s = hashy_map_unset(&map, "item_0");
+
+  if (s) free(s);
+
+  hashy_map_clear(&map, true);
+  return;
+
+  HashyKeyList* list = &map.keys;
+
+  HASHY_ASSERT(list->length == nr_items);
+  HASHY_ASSERT(list->items != 0);
+
+
+  HASHY_ASSERT(list->length == nr_items-1);
+
+  hashy_map_clear(&map, true);
+
+  HASHY_ASSERT(list->items == 0);
+  HASHY_ASSERT(list->length == 0);
+  HASHY_ASSERT(list->avail == 0);
+  HASHY_ASSERT(list->length == 0);
+}
+
 int main(int argc, char* argv[]) {
 
+  test_get_keys2();
   srand(time(0));
 
   test_simple();

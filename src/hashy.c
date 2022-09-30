@@ -15,7 +15,21 @@ void hashy_map_init(HashyMap* map, int64_t capacity) {
   map->capacity = OR(capacity, HASHY_DEFAULT_CAPACITY);
 
   map->buckets.initialized = false;
+  map->config.remember_keys = false;
   hashy_bucket_buffer_init(&map->buckets, map->capacity);
+}
+
+void hashy_map_init_v2(HashyMap* map, HashyMapConfig cfg) {
+  int64_t capacity = OR(cfg.capacity, HASHY_DEFAULT_CAPACITY);
+  cfg.capacity = capacity;
+
+  hashy_map_init(map, capacity);
+
+  if (cfg.remember_keys) {
+    hashy_key_list_init(&map->keys, capacity);
+  }
+
+  map->config = cfg;
 }
 
 static uint64_t hashy_hash(const char* value) {
@@ -42,6 +56,12 @@ void* hashy_map_set(HashyMap* map, const char* key, void* value) {
   if (!map->initialized) HASHY_WARNING_RETURN(0, stderr, "Hashmap not initialized.\n");
   if (!key || !value) HASHY_WARNING_RETURN(0, stderr, "Key or value is null.\n");
 
+
+  if (map->config.remember_keys && map->keys.initialized) {
+    if (hashy_map_get(map, key) == 0) {
+      hashy_key_list_push(&map->keys, key);
+    }
+  }
 
   uint64_t hash = hashy_hash(key) % map->capacity;
 
@@ -112,6 +132,11 @@ int hashy_map_clear(HashyMap* map, bool free_values) {
   hashy_bucket_buffer_clear(&map->buckets, free_values);
   map->used = 0;
 
+
+  if (map->keys.initialized) {
+    hashy_key_list_clear(&map->keys);
+  }
+
   return 1;
 }
 
@@ -122,21 +147,16 @@ void* hashy_map_unset(HashyMap* map, const char* key) {
   HashyBucket* bucket = hashy_map_get_bucket(map, key);
   if (!bucket) return 0;
 
-  if (bucket->key == 0 && bucket->map != 0) return hashy_map_unset(bucket->map, key);
-  if (bucket->key == 0) HASHY_WARNING_RETURN(0, stderr, "Bucket has no key.\n");
-
-  if (strcmp(bucket->key, key) != 0) {
-    if (bucket->map) return hashy_map_unset(bucket->map, key);
-
-    HASHY_WARNING_RETURN(0, stderr, "bucket key does not match.\n");
+  if (bucket->key != 0) {
+    free(bucket->key);
   }
 
   void* value = bucket->value;
 
-  free(bucket->key);
   bucket->key = 0;
   bucket->value = 0;
   map->used = MAX(0, map->used - 1);
+  bucket->initialized = false;
 
   return value;
 }

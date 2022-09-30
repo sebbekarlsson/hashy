@@ -6,17 +6,27 @@
 
 struct HASHY_MAP_STRUCT;
 
+typedef struct {
+  bool remember_keys;
+  int64_t capacity;
+} HashyMapConfig;
+
 typedef struct HASHY_MAP_STRUCT {
   HashyBucketBuffer buckets;
   bool initialized;
   int64_t capacity;
   int64_t used;
 
+  HashyKeyList keys;
+  HashyMapConfig config;
+
   struct HASHY_MAP_STRUCT* root;
 } HashyMap;
 
 
 void hashy_map_init(HashyMap* map, int64_t capacity);
+
+void hashy_map_init_v2(HashyMap* map, HashyMapConfig cfg);
 
 void* hashy_map_set(HashyMap* map, const char* key, void* value);
 
