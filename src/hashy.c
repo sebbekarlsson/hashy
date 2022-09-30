@@ -147,6 +147,11 @@ void* hashy_map_unset(HashyMap* map, const char* key) {
   HashyBucket* bucket = hashy_map_get_bucket(map, key);
   if (!bucket) return 0;
 
+
+  if (map->config.remember_keys && map->keys.initialized) {
+    hashy_key_list_remove(&map->keys, key);
+  }
+
   if (bucket->key != 0) {
     free(bucket->key);
   }
