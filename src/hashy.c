@@ -57,11 +57,21 @@ void* hashy_map_set(HashyMap* map, const char* key, void* value) {
   if (!key || !value) HASHY_WARNING_RETURN(0, stderr, "Key or value is null.\n");
 
 
+  HashyBucket* existing = hashy_map_get_bucket(map , key);
+
+  if (existing)  {
+    if (existing->key == 0) HASHY_WARNING_RETURN(0, stderr, "Corrupt hashmap, bucket is missing key.\n");
+    existing->value = value;
+    return existing->value;
+  }
+
   if (map->config.remember_keys && map->keys.initialized) {
-    if (hashy_map_get(map, key) == 0) {
+    if (existing == 0) {
       hashy_key_list_push(&map->keys, key);
     }
   }
+
+
 
   uint64_t hash = hashy_hash(key) % map->capacity;
 

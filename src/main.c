@@ -394,6 +394,30 @@ void test_get_keys2() {
   HASHY_ASSERT(list->length == 0);
 }
 
+void test_set_same() {
+  HashyMap map = {0};
+  hashy_map_init(&map, 256);
+
+  const char* message = "hello world";
+  char* mystr = strdup(message);
+
+  int64_t iter = 100;
+  const char* mykey = "message";
+
+  for (int64_t i = 0; i < 100; i++) {
+    hashy_map_set(&map, mykey, mystr);
+  }
+
+  for (int64_t i = 0; i < 100; i++) {
+    char* value = hashy_map_get(&map, mykey);
+
+    HASHY_ASSERT(value != 0);
+    HASHY_ASSERT(strcmp(value, message) == 0);
+  }
+
+  hashy_map_clear(&map, true);
+}
+
 int main(int argc, char* argv[]) {
 
   test_get_keys2();
@@ -406,6 +430,7 @@ int main(int argc, char* argv[]) {
   test_set_clear_and_get();
   test_set_vectors();
   test_get_keys();
+  test_set_same();
 
   return 0;
 }
