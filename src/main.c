@@ -370,6 +370,18 @@ void test_get_keys2() {
     hashy_map_set(&map, tmp, x);
   }
 
+  HashyIterator it = {0};
+
+  int64_t iter_count = 0;
+  while (hashy_map_iterate(&map, &it)) {
+    char* key = it.bucket->value;
+    iter_count++;
+  }
+
+  HASHY_ASSERT(iter_count == nr_items);
+  HASHY_ASSERT(it.keys.length <= 0);
+  HASHY_ASSERT(it.keys.items == 0);
+
 
   char* s = hashy_map_unset(&map, "item_0");
 
@@ -415,14 +427,27 @@ void test_set_same() {
     HASHY_ASSERT(strcmp(value, message) == 0);
   }
 
+   for (int64_t i = 0; i < 100; i++) {
+    hashy_map_set(&map, mykey, mystr);
+  }
+
+  for (int64_t i = 0; i < 100; i++) {
+    char* value = hashy_map_get(&map, mykey);
+
+    HASHY_ASSERT(value != 0);
+    HASHY_ASSERT(strcmp(value, message) == 0);
+  }
+
+
+
   hashy_map_clear(&map, true);
 }
 
 int main(int argc, char* argv[]) {
 
-  test_get_keys2();
   srand(time(0));
 
+  test_get_keys2();
   test_simple();
   test_big();
   test_get_without_set();

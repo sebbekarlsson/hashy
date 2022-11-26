@@ -197,3 +197,32 @@ int hashy_map_get_keys(HashyMap* map, HashyKeyList* out) {
 
   return out->length > 0;
 }
+
+int hashy_map_iterate(HashyMap* map, HashyIterator* it) {
+  if (!map || !it) return 0;
+
+
+
+  if (it->keys.length <= 0) {
+    if (!hashy_map_get_keys(map, &it->keys)) return 0;
+  }
+
+
+  if (it->i >= it->keys.length) {
+    hashy_key_list_clear(&it->keys);
+    return 0;
+  }
+
+  const char* key = it->keys.items[it->i];
+
+  if (!key) {
+    hashy_key_list_clear(&it->keys);
+    return 0;
+  }
+
+  it->bucket = hashy_map_get_bucket(map, key);
+
+  it->i++;
+
+  return it->bucket != 0;
+}

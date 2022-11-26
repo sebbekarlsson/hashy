@@ -23,6 +23,11 @@ typedef struct HASHY_MAP_STRUCT {
   struct HASHY_MAP_STRUCT* root;
 } HashyMap;
 
+typedef struct {
+  HashyBucket* bucket;
+  HashyKeyList keys;
+  int64_t i;
+} HashyIterator;
 
 void hashy_map_init(HashyMap* map, int64_t capacity);
 
@@ -41,4 +46,6 @@ void* hashy_map_unset(HashyMap* map, const char* key);
 
 
 int hashy_map_get_keys(HashyMap* map, HashyKeyList* out);
+
+int hashy_map_iterate(HashyMap* map, HashyIterator* it);
 #endif
