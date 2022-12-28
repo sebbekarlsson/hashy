@@ -448,6 +448,7 @@ int main(int argc, char* argv[]) {
   srand(time(0));
 
   test_get_keys2();
+
   test_simple();
   test_big();
   test_get_without_set();

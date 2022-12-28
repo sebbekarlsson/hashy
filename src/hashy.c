@@ -204,7 +204,10 @@ int hashy_map_iterate(HashyMap* map, HashyIterator* it) {
 
 
   if (it->keys.length <= 0) {
-    if (!hashy_map_get_keys(map, &it->keys)) return 0;
+    if (!hashy_map_get_keys(map, &it->keys)) {
+      hashy_key_list_clear(&it->keys);
+      return 0;
+    }
   }
 
 
@@ -223,6 +226,10 @@ int hashy_map_iterate(HashyMap* map, HashyIterator* it) {
   it->bucket = hashy_map_get_bucket(map, key);
 
   it->i++;
+
+  if (it->bucket == 0) {
+    hashy_key_list_clear(&it->keys);
+  }
 
   return it->bucket != 0;
 }
