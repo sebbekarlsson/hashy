@@ -349,7 +349,7 @@ void test_get_keys() {
 
   HASHY_ASSERT(list.items == 0);
   HASHY_ASSERT(list.length == 0);
-  //HASHY_ASSERT(list.avail == 0);
+  HASHY_ASSERT(list.avail == 0);
   HASHY_ASSERT(list.length == 0);
 
   hashy_map_clear(&map, true);
@@ -402,7 +402,7 @@ void test_get_keys2() {
 
   HASHY_ASSERT(list->items == 0);
   HASHY_ASSERT(list->length == 0);
-  //HASHY_ASSERT(list->avail == 0);
+  HASHY_ASSERT(list->avail == 0);
   HASHY_ASSERT(list->length == 0);
 }
 
