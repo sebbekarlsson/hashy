@@ -26,7 +26,7 @@ void hashy_map_init_v2(HashyMap* map, HashyMapConfig cfg) {
   hashy_map_init(map, capacity);
 
   if (cfg.remember_keys) {
-    hashy_key_list_init(&map->keys, capacity);
+    hashy_key_list_init(&map->keys);
   }
 
   map->config = cfg;
@@ -179,7 +179,7 @@ void* hashy_map_unset(HashyMap* map, const char* key) {
 int hashy_map_get_keys(HashyMap* map, HashyKeyList* out) {
   if (!map || !out) return 0;
   if (!out->initialized) {
-    hashy_key_list_init(out, map->capacity / 2);
+    hashy_key_list_init(out);
   }
   if (map->buckets.length <= 0) return 0;
 
