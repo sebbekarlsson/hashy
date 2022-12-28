@@ -83,7 +83,7 @@ void hashy_key_list_clear(HashyKeyList* list) {
 
 
   if (list->items != 0) {
-    for (int64_t i = 0; i < list->length; i++) {
+    for (int64_t i = 0; i < MAX(list->length, list->avail); i++) {
       if (list->items[i] != 0) {
         free(list->items[i]);
         list->items[i] = 0;
