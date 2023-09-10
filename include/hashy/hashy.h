@@ -16,6 +16,7 @@ typedef struct HASHY_MAP_STRUCT {
   bool initialized;
   int64_t capacity;
   int64_t used;
+  int64_t num_collisions;
 
   HashyKeyList keys;
   HashyMapConfig config;

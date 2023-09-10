@@ -33,18 +33,11 @@ int hashy_bucket_buffer_grow(HashyBucketBuffer* buffer, int64_t length) {
   int64_t start = buffer->length;
   buffer->length += length;
 
-  //if (!buffer->items) {
-   // buffer->items = (HashyBucket*)calloc(length, sizeof(HashyBucket)); // because we prefer to zero initialize
- // } else {
-    buffer->items = (HashyBucket*)realloc(buffer->items, (buffer->length) * sizeof(HashyBucket));
-
-    memset(&buffer->items[start], 0, sizeof(HashyBucket) * (length));
-    //for (int64_t i = start; i < buffer->length; i++) {
-     // buffer->items[i].initialized = false;
-     // hashy_bucket_init(&buffer->items[i]);
-   // }
-
- // }
+  buffer->items = (HashyBucket*)realloc(buffer->items, (buffer->length) * sizeof(HashyBucket));
+  if (buffer->items == 0) {
+    HASHY_WARNING_RETURN(0, stderr, "Failed to reallocate buffer.\n");
+  }
+  memset(&buffer->items[start], 0, sizeof(HashyBucket) * (length));
 
   return buffer->items != 0 && buffer->length >= 0;
 }
@@ -77,13 +70,15 @@ int hashy_bucket_clear(HashyBucket* bucket, bool free_values) {
   if (bucket->map != 0) {
     hashy_map_clear(bucket->map, free_values);
     free(bucket->map);
-    bucket->map = 0;
   }
+
+  bucket->map = 0;
 
   if (bucket->key) {
     free(bucket->key);
-    bucket->key = 0;
   }
+
+  bucket->key = 0;
 
   if (bucket->value != 0 && free_values == true) {
     free(bucket->value);

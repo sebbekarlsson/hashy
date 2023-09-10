@@ -4,10 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
-
-
 void hashy_map_init(HashyMap* map, int64_t capacity) {
   if (!map) return;
   if (map->initialized) HASHY_WARNING_RETURN(, stderr, "map already initialized.\n");
@@ -76,7 +72,9 @@ void* hashy_map_set(HashyMap* map, const char* key, void* value) {
   uint64_t hash = hashy_hash(key) % map->capacity;
 
   if (!map->buckets.items) {
-    hashy_bucket_buffer_grow(&map->buckets, map->capacity);
+    if (!hashy_bucket_buffer_grow(&map->buckets, map->capacity)) {
+      HASHY_WARNING_RETURN(0, stderr, "Failed to grow buckets.\n");
+    }
   }
 
   HashyBucket* bucket = hashy_bucket_buffer_get(&map->buckets, hash);
@@ -93,6 +91,7 @@ void* hashy_map_set(HashyMap* map, const char* key, void* value) {
   }
 
   if (collision) {
+    map->num_collisions += 1;
     if (!bucket->map) {
       bucket->map = NEW(HashyMap);
       bucket->map->root = map;
@@ -141,6 +140,7 @@ int hashy_map_clear(HashyMap* map, bool free_values) {
 
   hashy_bucket_buffer_clear(&map->buckets, free_values);
   map->used = 0;
+  map->num_collisions = 0;
 
 
   if (map->keys.initialized) {
