@@ -261,7 +261,7 @@ typedef struct {
 static void test_set_vectors() {
   int64_t n_vectors = 64;
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_clear = true, .free_values_on_overwrite = true, .free_values_on_unset = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_clear = true, .free_values_on_overwrite = true, .free_values_on_unset = true, .free_linked_on_clear = true });
 
   for (int j = 0; j < 16; j++) {
     for (int64_t i = 0; i < n_vectors; i++) {
@@ -320,6 +320,44 @@ static void test_set_vectors() {
       HASHY_TASSERT(vv->z == z);
     }
   }
+
+  hashy_map_clear(&map);
+
+
+  for (int j = 0; j < 16; j++) {
+    for (int64_t i = 0; i < n_vectors; i++) {
+      float x = (float)j + 0.01f;//hashy_float_rand(-1.0f, 1.0f);
+      float y = (float)i+j + 0.5f;//hashy_float_rand(-1.0f, 1.0f);
+      float z = (float)(x+y) / 3.14f;//hashy_float_rand(-1.0f, 1.0f);
+
+      HashyVector* v = NEW(HashyVector);
+      v->x = x;
+      v->y = y;
+      v->z = z;
+
+      char tmp[256];
+      sprintf(tmp, "%1.3f;%1.3f;%1.3f", v->x, v->y, v->z);
+
+
+      HASHY_TASSERT(hashy_map_set(&map, tmp, v) != 0);
+
+
+      HashyBucket* bucket = hashy_map_get_bucket(&map, tmp);
+
+      HASHY_TASSERT(bucket != 0);
+      HASHY_TASSERT(strcmp(bucket->key.value, tmp) == 0);
+
+
+      HashyVector* vv = hashy_map_get(&map, tmp);
+
+      HASHY_TASSERT(vv  != 0);
+
+      HASHY_TASSERT(vv->x == x);
+      HASHY_TASSERT(vv->y == y);
+      HASHY_TASSERT(vv->z == z);
+    }
+  }
+  
 
   hashy_map_destroy(&map);
 }

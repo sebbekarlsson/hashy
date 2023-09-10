@@ -9,5 +9,6 @@ typedef struct {
   bool free_values_on_unset;
   bool free_values_on_clear;
   bool free_values_on_overwrite;
+  bool free_linked_on_clear;
 } HashyConfig;
 #endif

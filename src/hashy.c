@@ -50,7 +50,13 @@ int hashy_map_clear(HashyMap* map) {
   }
 
   if (map->next != 0) {
-    hashy_map_clear(map->next);
+    if (map->config.free_linked_on_clear) {
+      hashy_map_destroy(map->next);
+      free(map->next);
+      map->next = 0;
+    } else {
+      hashy_map_clear(map->next);
+    }
   }
 
   return 1;
