@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define BENCH_CAPACITY 1024
+#define BENCH_CAPACITY 4048
 
 #define MEASURE_TIME(name, body)                                               \
   {                                                                            \
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
   
   #if 0
   MEASURE_TIME("hashy_map_set (duplicate)",
-    for (int i = 0; i < BENCH_MOCK_DATA_LENGTH; i++) {
+    for (int i = 0; i < BENCH_MOCK_DATA_LENGTH * 2; i++) {
       BenchMockSample sample = samples[i];
       const char* key = sample.key;
       const char* value = sample.value;
@@ -49,6 +49,6 @@ int main(int argc, char *argv[]) {
     }
   );
   #endif
-  hashy_map_clear(&map);
   hashy_map_destroy(&map);
+  hashy_map_clear(&map);
 }

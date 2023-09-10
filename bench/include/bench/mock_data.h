@@ -8,9 +8,9 @@ typedef struct {
 
 static const BenchMockSample samples[] = {
 
-    (BenchMockSample){.key = "Criciúma", .value = "Salicaceae"
-
-    },
+    (BenchMockSample){.key = "abc", .value = "123"},
+    (BenchMockSample){.key = "cba", .value = "321"},
+    (BenchMockSample){.key = "Criciúma", .value = "Salicaceae"},
     (BenchMockSample){.key = "Ghouazi", .value = "Valerianaceae"
 
     },

@@ -11,9 +11,9 @@ add_library(hashy_static STATIC ${sources})
 
 add_executable(hashy_e ${sources})
 
-target_compile_options(hashy PUBLIC -fPIC)
-target_compile_options(hashy_static PUBLIC -fPIC)
-#target_compile_options(hashy_e PUBLIC -fPIC -g -Wall)
+target_compile_options(hashy PUBLIC -fPIC -g -Wall)
+target_compile_options(hashy_static PUBLIC -fPIC -g -Wall)
+target_compile_options(hashy_e PUBLIC -fPIC -g -Wall)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 

@@ -72,8 +72,7 @@ int hashy_bucket_destroy(HashyBucket* bucket) {
 }
 
 static inline bool bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
-  if (!bucket->is_set) return true;
-  return strcmp(bucket->key.value, key) == 0;
+  return bucket->index == index && bucket->hash == hash && strcmp(bucket->key.value, key) == 0;
 }
 
 int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {
@@ -88,7 +87,10 @@ int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint6
       bucket->value = 0;
     }
     bucket->value = value;
-    bucket->key = bucket->is_set ? bucket->key : hashy_string_make(key);
+    if (bucket->is_set == false) {
+      snprintf(&bucket->key.value[0], HASHY_MAX_KEY_LENGTH, "%s", key);
+      //bucket->key = hashy_string_make(key);
+    }
     bucket->index = index;
     bucket->hash = hash;
     bucket->is_set = true;
@@ -102,7 +104,9 @@ int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint6
   HASHY_ASSERT_RETURN(bucket->map != 0, 0);
 
   if (!bucket->map->initialized) {
-    HASHY_ASSERT_RETURN(hashy_map_init(bucket->map, bucket->config) == 1, 0);
+    HashyConfig next_config = bucket->config;
+    next_config.capacity += bucket->config.capacity / 2;
+    HASHY_ASSERT_RETURN(hashy_map_init(bucket->map, next_config) == 1, 0);
   }
 
   int64_t n_collisions = *num_collisions;

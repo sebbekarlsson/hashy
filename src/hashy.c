@@ -5,15 +5,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static uint64_t hashy_hash_func(const char* value) {
+static uint64_t hashy_hash_func(const char* value, uint64_t capacity) {
   uint64_t hash = 0;
   unsigned char* str = (unsigned char*)value;
-  int c = 0;
+  uint64_t c = 0;
 
-  while ((c = *str++)) {
-    hash = (c + (hash << 6) + (hash << 16) - hash);
+  while ((c = (uint64_t)*str++)) {
+    hash = (c + (hash << 6ULL) + (hash << 16ULL) - hash) + (capacity * (hash >> 3ULL));
   }
 
+  hash /= capacity;
+  
   return hash;
 }
 
@@ -84,7 +86,7 @@ int hashy_map_set(HashyMap* map, const char* key, void* value) {
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
   HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
 
-  uint64_t hash = hashy_hash_func(key);
+  uint64_t hash = hashy_hash_func(key, map->buckets.length);
   uint64_t index = hash % map->buckets.length;
   HashyBucket* bucket = &map->buckets.items[index];
   if (!bucket->initialized) {
@@ -109,7 +111,7 @@ int hashy_map_unset(HashyMap* map, const char* key) {
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
   HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
 
-  uint64_t hash = hashy_hash_func(key);
+  uint64_t hash = hashy_hash_func(key, map->buckets.length);
   uint64_t index = hash % map->buckets.length;
   HashyBucket* bucket = &map->buckets.items[index];
 
@@ -135,7 +137,7 @@ void* hashy_map_get(HashyMap* map, const char* key) {
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
   HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
 
-  uint64_t hash = hashy_hash_func(key);
+  uint64_t hash = hashy_hash_func(key, map->buckets.length);
   uint64_t index = hash % map->buckets.length;
   HashyBucket* bucket = &map->buckets.items[index];
   if (!bucket->initialized) {
@@ -152,7 +154,7 @@ HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key) {
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
   HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
 
-  uint64_t hash = hashy_hash_func(key);
+  uint64_t hash = hashy_hash_func(key, map->buckets.length);
   uint64_t index = hash % map->buckets.length;
   HashyBucket* bucket = &map->buckets.items[index];
   if (!bucket->initialized) {
