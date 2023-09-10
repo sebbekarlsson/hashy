@@ -17,7 +17,7 @@ typedef struct {
   uint64_t index;
   uint64_t hash;
   
-  struct HASHY_MAP_STRUCT* map;
+  //struct HASHY_MAP_STRUCT* map;
   void* value;
   bool is_set;
   bool initialized;
@@ -37,4 +37,5 @@ void* hashy_bucket_get(HashyBucket* bucket, const char* key, uint64_t index, uin
 
 HashyBucket* hashy_bucket_get_bucket(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
 
+bool hashy_bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
 #endif

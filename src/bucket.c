@@ -12,7 +12,7 @@ int hashy_bucket_init(HashyBucket* bucket, HashyConfig cfg) {
   if (bucket->initialized) return 1;
   
   hashy_string_clear(&bucket->key);
-  bucket->map = 0;
+  //bucket->map = 0;
   bucket->value = 0;
   bucket->hash = 0;
   bucket->index = 0;
@@ -34,6 +34,7 @@ int hashy_bucket_clear(HashyBucket* bucket) {
   bucket->hash = 0;
   bucket->is_set = false;
 
+  /*
   if (bucket->map != 0) {
     if (bucket->config.destroy_recursion_on_clear) {
       hashy_map_destroy(bucket->map);
@@ -42,7 +43,7 @@ int hashy_bucket_clear(HashyBucket* bucket) {
     } else {
       hashy_map_clear(bucket->map);
     }
-  }
+    }*/
 
   return 1;
 }
@@ -56,23 +57,24 @@ int hashy_bucket_destroy(HashyBucket* bucket) {
   }
   
   bucket->value = 0;
-  hashy_string_clear(&bucket->key);
   bucket->index = 0;
   bucket->hash = 0;
   bucket->is_set = false;
+  bucket->initialized = false;
 
+  /*
   if (bucket->map != 0) {
     hashy_map_destroy(bucket->map);
     free(bucket->map);
-  }
+    }
 
   bucket->map = 0;
-
+  */
   return 1;
 }
 
-static inline bool bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
-  return bucket->index == index && bucket->hash == hash && strcmp(bucket->key.value, key) == 0;
+bool hashy_bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
+  return strcmp(bucket->key.value, key) == 0;
 }
 
 int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {
@@ -81,7 +83,7 @@ int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint6
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
   HASHY_ASSERT_RETURN(num_collisions != 0, 0);
 
-  if (bucket->is_set == false || bucket_matches(bucket, key, index, hash)) {
+  if (bucket->is_set == false || hashy_bucket_matches(bucket, key, index, hash)) {
     if (bucket->value != 0 && bucket->config.free_values_on_overwrite) {
       free(bucket->value);
       bucket->value = 0;
@@ -97,6 +99,9 @@ int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint6
     return 1;
   }
 
+  HASHY_ASSERT_RETURN(bucket->is_set == true, 0);
+
+  /*
   if (bucket->map == 0) {
     bucket->map = (HashyMap*)calloc(1, sizeof(HashyMap));
   }
@@ -113,7 +118,9 @@ int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint6
   n_collisions += 1;
   *num_collisions = n_collisions;
 
-  return hashy_map_set(bucket->map, key, value);
+  return hashy_map_set(bucket->map, key, value);*/
+
+  return 0;
 }
 
 int hashy_bucket_unset(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
@@ -121,7 +128,7 @@ int hashy_bucket_unset(HashyBucket* bucket, const char* key, uint64_t index, uin
   HASHY_ASSERT_RETURN(key != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
 
-  if (bucket->is_set && bucket_matches(bucket, key, index, hash)) {
+  if (bucket->is_set && hashy_bucket_matches(bucket, key, index, hash)) {
     if (bucket->value != 0 && bucket->config.free_values_on_unset) {
       free(bucket->value);
       bucket->value = 0;
@@ -134,9 +141,11 @@ int hashy_bucket_unset(HashyBucket* bucket, const char* key, uint64_t index, uin
     return 1;
   }
 
+  /*
   if (bucket->map != 0) {
     return hashy_map_unset(bucket->map, key);
   }
+  */
 
   return 0;
 }
@@ -146,14 +155,15 @@ void* hashy_bucket_get(HashyBucket* bucket, const char* key, uint64_t index, uin
   HASHY_ASSERT_RETURN(key != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
 
-  if (bucket->is_set && bucket_matches(bucket, key, index, hash)) {
+  if (bucket->is_set && hashy_bucket_matches(bucket, key, index, hash)) {
     return bucket->value;
   }
 
+  /*
   if (bucket->map != 0) {
     return hashy_map_get(bucket->map, key);
   }
-
+  */
   return 0;
 }
 
@@ -162,11 +172,13 @@ HashyBucket* hashy_bucket_get_bucket(HashyBucket* bucket, const char* key, uint6
   HASHY_ASSERT_RETURN(key != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
 
-  if (bucket->is_set && bucket_matches(bucket, key, index, hash)) return bucket;
+  if (bucket->is_set && hashy_bucket_matches(bucket, key, index, hash)) return bucket;
 
+  /*
   if (bucket->map != 0) {
     return hashy_map_get_bucket(bucket->map, key);
   }
+  */
 
   return 0;
 }

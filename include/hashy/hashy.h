@@ -21,6 +21,9 @@ typedef struct HASHY_MAP_STRUCT {
   
   bool initialized;
   HashyConfig config;
+
+  struct HASHY_MAP_STRUCT* root;
+  struct HASHY_MAP_STRUCT* next;
 } HashyMap;
 
 int hashy_map_init(HashyMap* map, HashyConfig cfg);
