@@ -17,7 +17,7 @@ typedef struct {
 } Person;
 
 
-void test_simple() {
+static void test_simple() {
 
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
@@ -43,7 +43,7 @@ void test_simple() {
   hashy_map_destroy(&map);
 }
 
-void test_big() {
+static void test_big() {
 
     const char* keys[] = { "contextually-based",
                          "bi-directional",
@@ -188,7 +188,7 @@ void test_big() {
 }
 
 
-void test_get_without_set() {
+static void test_get_without_set() {
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
 
@@ -199,7 +199,7 @@ void test_get_without_set() {
   hashy_map_destroy(&map);
 }
 
-void test_unset_without_values() {
+static void test_unset_without_values() {
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
 
@@ -210,7 +210,7 @@ void test_unset_without_values() {
   HASHY_TASSERT(map.buckets.items == 0);
 }
 
-void test_set_clear_and_get() {
+static void test_set_clear_and_get() {
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 16, .free_values_on_clear = true, .free_values_on_destroy = true });
 
@@ -258,7 +258,7 @@ typedef struct {
  //   return min + scale * ( max - min );      /* [min, max] */
 //}
 
-void test_set_vectors() {
+static void test_set_vectors() {
   int64_t n_vectors = 64;
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_overwrite = true });
@@ -325,7 +325,7 @@ void test_set_vectors() {
 }
 
 
-void test_set_same() {
+static void test_set_same() {
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
 
@@ -362,6 +362,71 @@ void test_set_same() {
   hashy_map_destroy(&map);
 }
 
+static void test_get_keys() {
+  HashyMap map = {0};
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
+
+  int64_t nr_items = 125;
+
+
+
+  for (int64_t i = 0; i < nr_items; i++) {
+    char tmp[256];
+    sprintf(tmp, "item_%ld", i);
+    char* x = strdup("123");
+    hashy_map_set(&map, tmp, x);
+  }
+
+
+
+  HashyKeyList list = {0};
+  hashy_map_get_keys(&map, &list);
+
+  HASHY_TASSERT(list.length == nr_items);
+  HASHY_TASSERT(list.items != 0);
+
+  hashy_key_list_clear(&list);
+
+  HASHY_TASSERT(list.items == 0);
+  HASHY_TASSERT(list.length == 0);
+  HASHY_TASSERT(list.avail == 0);
+  HASHY_TASSERT(list.length == 0);
+
+  hashy_map_destroy(&map);
+}
+
+static void test_iterate() {
+  HashyMap map = {0};
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_unset = true });
+
+  int64_t nr_items = 125;
+
+
+
+  for (int64_t i = 0; i < nr_items; i++) {
+    char tmp[256];
+    sprintf(tmp, "item_%ld", i);
+    char* x = strdup(tmp);
+    hashy_map_set(&map, tmp, x);
+  }
+
+  HashyIterator it = {0};
+
+  int64_t iter_count = 0;
+  while (hashy_map_iterate(&map, &it)) {
+    char* key = it.bucket->value;
+    iter_count++;
+  }
+
+  HASHY_TASSERT(iter_count == nr_items);
+  HASHY_TASSERT(it.keys.length <= 0);
+  HASHY_TASSERT(it.keys.items == 0);
+
+  HASHY_TASSERT(hashy_map_unset(&map, "item_0") == 1);
+
+  hashy_map_destroy(&map);
+}
+
 int main(int argc, char* argv[]) {
 
   srand(time(0));
@@ -374,6 +439,8 @@ int main(int argc, char* argv[]) {
   test_set_clear_and_get();
   test_set_vectors();
   test_set_same();
+  test_get_keys();
+  test_iterate();
 
   printf("OK, all tests passed.\n");
 

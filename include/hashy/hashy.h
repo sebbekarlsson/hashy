@@ -36,4 +36,14 @@ void* hashy_map_get(HashyMap* map, const char* key);
 
 HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key);
 
+int hashy_map_get_keys(HashyMap* map, HashyKeyList* out);
+
+typedef struct {
+  HashyBucket* bucket;
+  HashyKeyList keys;
+  int64_t i;
+} HashyIterator;
+
+int hashy_map_iterate(HashyMap* map, HashyIterator* it);
+
 #endif

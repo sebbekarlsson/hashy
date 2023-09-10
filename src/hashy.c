@@ -161,3 +161,56 @@ HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key) {
 
   return hashy_bucket_get_bucket(bucket, key, index, hash);
 }
+
+int hashy_map_get_keys(HashyMap* map, HashyKeyList* out) {
+  if (!map || !out) return 0;
+  if (!out->initialized) {
+    hashy_key_list_init(out, map->config.capacity / 2);
+  }
+  if (map->buckets.length <= 0) return 0;
+
+  for (int64_t i = 0; i < map->buckets.length; i++) {
+    HashyBucket bucket = map->buckets.items[i];
+
+    if (bucket.is_set) {
+      hashy_key_list_push(out, bucket.key);
+    }
+
+    if (bucket.map != 0) {
+      hashy_map_get_keys(bucket.map, out);
+    }
+  }
+
+  return out->length > 0;
+}
+
+int hashy_map_iterate(HashyMap* map, HashyIterator* it) {
+  if (!map || !it) return 0;
+
+
+
+  if (it->keys.length <= 0) {
+    if (!hashy_map_get_keys(map, &it->keys)) {
+      hashy_key_list_clear(&it->keys);
+      return 0;
+    }
+  }
+
+
+  if (it->i >= it->keys.length) {
+    hashy_key_list_clear(&it->keys);
+    return 0;
+  }
+
+  HashyString key = it->keys.items[it->i];
+
+  it->bucket = hashy_map_get_bucket(map, key.value);
+
+  it->i++;
+
+  if (it->bucket == 0) {
+    hashy_key_list_clear(&it->keys);
+  }
+
+  return it->bucket != 0;
+}
