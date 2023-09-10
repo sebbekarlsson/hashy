@@ -35,7 +35,13 @@ int hashy_bucket_clear(HashyBucket* bucket) {
   bucket->is_set = false;
 
   if (bucket->map != 0) {
-    hashy_map_clear(bucket->map);
+    if (bucket->config.destroy_recursion_on_clear) {
+      hashy_map_destroy(bucket->map);
+      free(bucket->map);
+      bucket->map = 0;
+    } else {
+      hashy_map_clear(bucket->map);
+    }
   }
 
   return 1;
@@ -67,7 +73,7 @@ int hashy_bucket_destroy(HashyBucket* bucket) {
 
 static inline bool bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
   if (!bucket->is_set) return true;
-  return (bucket->hash == hash && bucket->index == index) && strcmp(bucket->key.value, key) == 0;
+  return strcmp(bucket->key.value, key) == 0;
 }
 
 int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {
@@ -76,7 +82,7 @@ int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint6
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
   HASHY_ASSERT_RETURN(num_collisions != 0, 0);
 
-  if (bucket_matches(bucket, key, index, hash)) {
+  if (bucket->is_set == false || bucket_matches(bucket, key, index, hash)) {
     if (bucket->value != 0 && bucket->config.free_values_on_overwrite) {
       free(bucket->value);
       bucket->value = 0;
@@ -136,7 +142,7 @@ void* hashy_bucket_get(HashyBucket* bucket, const char* key, uint64_t index, uin
   HASHY_ASSERT_RETURN(key != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
 
-  if (bucket_matches(bucket, key, index, hash)) {
+  if (bucket->is_set && bucket_matches(bucket, key, index, hash)) {
     return bucket->value;
   }
 
