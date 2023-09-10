@@ -24,7 +24,9 @@
 
 int main(int argc, char *argv[]) {
   HashyMap map = {0};
-  hashy_map_init(&map, BENCH_CAPACITY);
+  hashy_map_init(&map, (HashyConfig){ .capacity = BENCH_CAPACITY });
+
+  printf("inserting: %d\n", BENCH_MOCK_DATA_LENGTH);
 
   MEASURE_TIME("hashy_map_set",
     for (int i = 0; i < BENCH_MOCK_DATA_LENGTH; i++) {
@@ -47,5 +49,6 @@ int main(int argc, char *argv[]) {
     }
   );
   #endif
-  hashy_map_clear(&map, false);
+  hashy_map_clear(&map);
+  hashy_map_destroy(&map);
 }

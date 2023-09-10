@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 
-#define HASHY_ASSERT(expr) { if (!(expr)) { fprintf(stderr, "FAIL: (%s)(%s)\n", #expr, __func__); assert(expr); } else {printf("OK: (%s)(%s).\n", #expr, __func__); } }
+#define HASHY_TASSERT(expr) { if (!(expr)) { fprintf(stderr, "FAIL: (%s)(%s)\n", #expr, __func__); assert(expr); } else if (0) {  printf("OK: (%s)(%s).\n", #expr, __func__); } }
 
 
 typedef struct {
@@ -20,7 +20,7 @@ typedef struct {
 void test_simple() {
 
   HashyMap map = {0};
-  hashy_map_init(&map, 256);
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
 
 
   Person* p = calloc(1, sizeof(Person));
@@ -28,19 +28,19 @@ void test_simple() {
   Person* p2 = calloc(1, sizeof(Person));
   p2->age = 64;
 
-  HASHY_ASSERT(hashy_map_set(&map, "john", p) != 0);
-  HASHY_ASSERT(hashy_map_set(&map, "sarah", p2) != 0);
+  HASHY_TASSERT(hashy_map_set(&map, "john", p) != 0);
+  HASHY_TASSERT(hashy_map_set(&map, "sarah", p2) != 0);
 
 
   Person* a = hashy_map_get(&map, "john");
   Person* b = hashy_map_get(&map, "sarah");
 
-  HASHY_ASSERT(a != 0);
-  HASHY_ASSERT(b != 0);
+  HASHY_TASSERT(a != 0);
+  HASHY_TASSERT(b != 0);
 
-  HASHY_ASSERT(a->age == 33);
-  HASHY_ASSERT(b->age == 64);
-  hashy_map_clear(&map, true);
+  HASHY_TASSERT(a->age == 33);
+  HASHY_TASSERT(b->age == 64);
+  hashy_map_destroy(&map);
 }
 
 void test_big() {
@@ -158,60 +158,61 @@ void test_big() {
 
 
   HashyMap map = {0};
-  hashy_map_init(&map, 16);
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256 });
 
   for (int64_t i = 0; i < nrkeys; i++) {
     const char* key = keys[i];
     const char* expected = values[i % nrvalues];
     char* value = strdup(values[i % nrvalues]);
 
-    HASHY_ASSERT(hashy_map_set(&map, key, value) != 0);
+    HASHY_TASSERT(hashy_map_set(&map, key, value) != 0);
 
     HashyBucket* bucket = hashy_map_get_bucket(&map, key);
 
-    HASHY_ASSERT(bucket != 0);
+    HASHY_TASSERT(bucket != 0);
 
-    HASHY_ASSERT(bucket->key != 0);
-    HASHY_ASSERT(strcmp(bucket->key, key) == 0);
+    HASHY_TASSERT(strcmp(bucket->key.value, key) == 0);
 
     char* back_value = hashy_map_get(&map, key);
 
-    HASHY_ASSERT(back_value != 0);
-    HASHY_ASSERT(strcmp(back_value, expected) == 0);
+    HASHY_TASSERT(back_value != 0);
+    HASHY_TASSERT(strcmp(back_value, expected) == 0);
 
-    char* to_free = hashy_map_unset(&map, key);
-    HASHY_ASSERT(to_free != 0);
+    hashy_map_unset(&map, key);
 
-    free(to_free);
-    to_free = 0;
+    free(back_value);
+    back_value = 0;
   }
 
-  hashy_map_clear(&map, true);
+  hashy_map_destroy(&map);
 }
 
 
 void test_get_without_set() {
   HashyMap map = {0};
-  hashy_map_init(&map, 16);
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
 
   void* yo = hashy_map_get(&map, "hello");
 
-  HASHY_ASSERT(yo == 0);
+  HASHY_TASSERT(yo == 0);
+
+  hashy_map_destroy(&map);
 }
 
 void test_unset_without_values() {
   HashyMap map = {0};
-  hashy_map_init(&map, 16);
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
 
-  void* yo = hashy_map_unset(&map, "hello");
-  HASHY_ASSERT(yo == 0);
-  hashy_map_clear(&map, true);
-  HASHY_ASSERT(map.buckets.items == 0);
+  hashy_map_unset(&map, "hello");
+  void* yo = hashy_map_get(&map, "hello");
+  HASHY_TASSERT(yo == 0);
+  hashy_map_destroy(&map);
+  HASHY_TASSERT(map.buckets.items == 0);
 }
 
 void test_set_clear_and_get() {
   HashyMap map = {0};
-  hashy_map_init(&map, 16);
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .free_values_on_clear = true, .free_values_on_destroy = true });
 
 
   const char* pname = "John Doe";
@@ -220,25 +221,28 @@ void test_set_clear_and_get() {
 
   char* value = hashy_map_get(&map, "name");
 
-  HASHY_ASSERT(value != 0);
-  HASHY_ASSERT(strcmp(value, pname) == 0);
+  HASHY_TASSERT(value != 0);
+  HASHY_TASSERT(strcmp(value, pname) == 0);
 
   hashy_map_unset(&map, "name");
 
   value = hashy_map_get(&map, "name");
 
-  HASHY_ASSERT(value == 0);
+  HASHY_TASSERT(value == 0);
 
-  value = hashy_map_set(&map, "name", name);
+  hashy_map_set(&map, "name", name);
+  value = hashy_map_get(&map, "name");
+  
+  HASHY_TASSERT(value != 0);
+  HASHY_TASSERT(strcmp(value, pname) == 0);
 
-  HASHY_ASSERT(value != 0);
-  HASHY_ASSERT(strcmp(value, pname) == 0);
-
-  hashy_map_clear(&map, true);
+  hashy_map_clear(&map);
 
   value = hashy_map_get(&map, "name");
 
-  HASHY_ASSERT(value == 0);
+  HASHY_TASSERT(value == 0);
+
+  hashy_map_destroy(&map);
 }
 
 typedef struct {
@@ -257,7 +261,7 @@ typedef struct {
 void test_set_vectors() {
   int64_t n_vectors = 64;
   HashyMap map = {0};
-  hashy_map_init(&map, 256);
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_overwrite = true });
 
   for (int j = 0; j < 16; j++) {
     for (int64_t i = 0; i < n_vectors; i++) {
@@ -274,23 +278,22 @@ void test_set_vectors() {
       sprintf(tmp, "%1.3f;%1.3f;%1.3f", v->x, v->y, v->z);
 
 
-      HASHY_ASSERT(hashy_map_set(&map, tmp, v) != 0);
+      HASHY_TASSERT(hashy_map_set(&map, tmp, v) != 0);
 
 
       HashyBucket* bucket = hashy_map_get_bucket(&map, tmp);
 
-      HASHY_ASSERT(bucket != 0);
-      HASHY_ASSERT(bucket->key != 0);
-      HASHY_ASSERT(strcmp(bucket->key, tmp) == 0);
+      HASHY_TASSERT(bucket != 0);
+      HASHY_TASSERT(strcmp(bucket->key.value, tmp) == 0);
 
 
       HashyVector* vv = hashy_map_get(&map, tmp);
 
-      HASHY_ASSERT(vv  != 0);
+      HASHY_TASSERT(vv  != 0);
 
-      HASHY_ASSERT(vv->x == x);
-      HASHY_ASSERT(vv->y == y);
-      HASHY_ASSERT(vv->z == z);
+      HASHY_TASSERT(vv->x == x);
+      HASHY_TASSERT(vv->y == y);
+      HASHY_TASSERT(vv->z == z);
     }
   }
 
@@ -307,108 +310,24 @@ void test_set_vectors() {
 
       HashyBucket* bucket = hashy_map_get_bucket(&map, tmp);
 
-      HASHY_ASSERT(bucket != 0);
-      HASHY_ASSERT(bucket->key != 0);
-      HASHY_ASSERT(strcmp(bucket->key, tmp) == 0);
+      HASHY_TASSERT(bucket != 0);
+      HASHY_TASSERT(strcmp(bucket->key.value, tmp) == 0);
 
       HashyVector* vv = hashy_map_get(&map, tmp);
 
-      HASHY_ASSERT(vv->x == x);
-      HASHY_ASSERT(vv->y == y);
-      HASHY_ASSERT(vv->z == z);
+      HASHY_TASSERT(vv->x == x);
+      HASHY_TASSERT(vv->y == y);
+      HASHY_TASSERT(vv->z == z);
     }
   }
 
-  hashy_map_clear(&map, true);
+  hashy_map_destroy(&map);
 }
 
-void test_get_keys() {
-  HashyMap map = {0};
-  hashy_map_init(&map, 256);
-
-  int64_t nr_items = 125;
-
-
-
-  for (int64_t i = 0; i < nr_items; i++) {
-    char tmp[256];
-    sprintf(tmp, "item_%ld", i);
-    char* x = strdup("123");
-    hashy_map_set(&map, tmp, x);
-  }
-
-
-
-  HashyKeyList list = {0};
-  hashy_map_get_keys(&map, &list);
-
-  HASHY_ASSERT(list.length == nr_items);
-  HASHY_ASSERT(list.items != 0);
-
-  hashy_key_list_clear(&list);
-
-  HASHY_ASSERT(list.items == 0);
-  HASHY_ASSERT(list.length == 0);
-  HASHY_ASSERT(list.avail == 0);
-  HASHY_ASSERT(list.length == 0);
-
-  hashy_map_clear(&map, true);
-}
-
-void test_get_keys2() {
-  HashyMap map = {0};
-  hashy_map_init_v2(&map, (HashyMapConfig){ .capacity = 256, .remember_keys = false });
-
-  int64_t nr_items = 125;
-
-
-
-  for (int64_t i = 0; i < nr_items; i++) {
-    char tmp[256];
-    sprintf(tmp, "item_%ld", i);
-    char* x = strdup(tmp);
-    hashy_map_set(&map, tmp, x);
-  }
-
-  HashyIterator it = {0};
-
-  int64_t iter_count = 0;
-  while (hashy_map_iterate(&map, &it)) {
-    char* key = it.bucket->value;
-    iter_count++;
-  }
-
-  HASHY_ASSERT(iter_count == nr_items);
-  HASHY_ASSERT(it.keys.length <= 0);
-  HASHY_ASSERT(it.keys.items == 0);
-
-
-  char* s = hashy_map_unset(&map, "item_0");
-
-  if (s) free(s);
-
-  hashy_map_clear(&map, true);
-  return;
-
-  HashyKeyList* list = &map.keys;
-
-  HASHY_ASSERT(list->length == nr_items);
-  HASHY_ASSERT(list->items != 0);
-
-
-  HASHY_ASSERT(list->length == nr_items-1);
-
-  hashy_map_clear(&map, true);
-
-  HASHY_ASSERT(list->items == 0);
-  HASHY_ASSERT(list->length == 0);
-  HASHY_ASSERT(list->avail == 0);
-  HASHY_ASSERT(list->length == 0);
-}
 
 void test_set_same() {
   HashyMap map = {0};
-  hashy_map_init(&map, 256);
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
 
   const char* message = "hello world";
   char* mystr = strdup(message);
@@ -423,8 +342,8 @@ void test_set_same() {
   for (int64_t i = 0; i < 100; i++) {
     char* value = hashy_map_get(&map, mykey);
 
-    HASHY_ASSERT(value != 0);
-    HASHY_ASSERT(strcmp(value, message) == 0);
+    HASHY_TASSERT(value != 0);
+    HASHY_TASSERT(strcmp(value, message) == 0);
   }
 
    for (int64_t i = 0; i < 100; i++) {
@@ -434,20 +353,19 @@ void test_set_same() {
   for (int64_t i = 0; i < 100; i++) {
     char* value = hashy_map_get(&map, mykey);
 
-    HASHY_ASSERT(value != 0);
-    HASHY_ASSERT(strcmp(value, message) == 0);
+    HASHY_TASSERT(value != 0);
+    HASHY_TASSERT(strcmp(value, message) == 0);
   }
 
 
 
-  hashy_map_clear(&map, true);
+  hashy_map_destroy(&map);
 }
 
 int main(int argc, char* argv[]) {
 
   srand(time(0));
 
-  test_get_keys2();
 
   test_simple();
   test_big();
@@ -455,8 +373,9 @@ int main(int argc, char* argv[]) {
   test_unset_without_values();
   test_set_clear_and_get();
   test_set_vectors();
-  test_get_keys();
   test_set_same();
+
+  printf("OK, all tests passed.\n");
 
   return 0;
 }

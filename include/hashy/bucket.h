@@ -2,39 +2,39 @@
 #define HASHY_BUCKET_H
 #include <stdint.h>
 #include <stdbool.h>
+#include <hashy/constants.h>
+#include <hashy/string.h>
+#include <hashy/config.h>
 
-#define HASHY_DEFAULT_CAPACITY 256
 
 struct HASHY_MAP_STRUCT;
 struct HASHY_BUCKET_BUFFER;
 
 typedef struct {
-  char* key;
-  void* value;
+  HashyString key;
+  HashyConfig config;
 
+  uint64_t index;
+  uint64_t hash;
+  
   struct HASHY_MAP_STRUCT* map;
+  void* value;
+  bool is_set;
   bool initialized;
 } HashyBucket;
 
-int hashy_bucket_clear(HashyBucket* bucket, bool free_values);
+int hashy_bucket_init(HashyBucket* bucket, HashyConfig cfg);
 
-typedef struct HASHY_BUCKET_BUFFER {
-  int64_t length;
-  HashyBucket* items;
-  bool initialized;
-  int64_t capacity;
-} HashyBucketBuffer;
+int hashy_bucket_clear(HashyBucket* bucket);
 
-void hashy_bucket_init(HashyBucket* bucket);
+int hashy_bucket_destroy(HashyBucket* bucket);
 
+int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions);
 
-// buffer
-void hashy_bucket_buffer_init(HashyBucketBuffer* buffer, int64_t capacity);
+int hashy_bucket_unset(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
 
-int hashy_bucket_buffer_grow(HashyBucketBuffer* buffer, int64_t length);
+void* hashy_bucket_get(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
 
-void hashy_bucket_buffer_clear(HashyBucketBuffer* buffer, bool free_values);
-
-HashyBucket* hashy_bucket_buffer_get(HashyBucketBuffer* buffer, uint64_t index);
+HashyBucket* hashy_bucket_get_bucket(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
 
 #endif

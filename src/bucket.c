@@ -6,85 +6,157 @@
 #include <stdio.h>
 
 
-void hashy_bucket_init(HashyBucket* bucket) {
-  if (!bucket) return;
-  if (bucket->initialized) return;
-  bucket->initialized = true;
-  bucket->key = 0;
+int hashy_bucket_init(HashyBucket* bucket, HashyConfig cfg) {
+  HASHY_ASSERT_RETURN(bucket != 0, 0);
+  HASHY_ASSERT_RETURN(cfg.capacity > 0, 0);
+  if (bucket->initialized) return 1;
+  
+  hashy_string_clear(&bucket->key);
   bucket->map = 0;
   bucket->value = 0;
+  bucket->hash = 0;
+  bucket->index = 0;
+  bucket->is_set = false;
+  bucket->config = cfg;
+  bucket->initialized = true;
+  return 1;
 }
 
-// buffer
-void hashy_bucket_buffer_init(HashyBucketBuffer* buffer, int64_t capacity) {
-  if (!buffer) return;
-  if (buffer->initialized) return;
-  buffer->initialized = true;
-  buffer->items = 0;
-  buffer->length = 0;
-  buffer->capacity = OR(capacity, HASHY_DEFAULT_CAPACITY);
-}
-
-int hashy_bucket_buffer_grow(HashyBucketBuffer* buffer, int64_t length) {
-  if (!buffer) return 0;
-  if (!length) return 0;
-  if (!buffer->initialized) return 0;
-
-  int64_t start = buffer->length;
-  buffer->length += length;
-
-  buffer->items = (HashyBucket*)realloc(buffer->items, (buffer->length) * sizeof(HashyBucket));
-  if (buffer->items == 0) {
-    HASHY_WARNING_RETURN(0, stderr, "Failed to reallocate buffer.\n");
+int hashy_bucket_clear(HashyBucket* bucket) {
+  HASHY_ASSERT_RETURN(bucket != 0, 0);
+  if (bucket->value != 0 && bucket->config.free_values_on_clear) {
+    free(bucket->value);
+    bucket->value = 0;
   }
-  memset(&buffer->items[start], 0, sizeof(HashyBucket) * (length));
+  bucket->value = 0;
+  hashy_string_clear(&bucket->key);
+  bucket->index = 0;
+  bucket->hash = 0;
+  bucket->is_set = false;
 
-  return buffer->items != 0 && buffer->length >= 0;
-}
-
-
-void hashy_bucket_buffer_clear(HashyBucketBuffer* buffer, bool free_values) {
-  if (!buffer) return;
-
-  for (int64_t i = 0; i < buffer->length; i++) {
-    hashy_bucket_clear(&buffer->items[i], free_values);
-  }
-
-  if (buffer->items) {
-    free(buffer->items);
-  }
-  buffer->items = 0;
-  buffer->length = 0;
-}
-
-HashyBucket* hashy_bucket_buffer_get(HashyBucketBuffer* buffer, uint64_t index) {
-  if (!buffer) HASHY_WARNING_RETURN(0, stderr, "buffer is null");
-  if (!buffer->initialized) HASHY_WARNING_RETURN(0, stderr, "buffer is not initialized.\n");
-  if (!buffer->items || buffer->length <= 0) HASHY_WARNING_RETURN(0, stderr, "buffer has no items.\n");
-  if (index >= buffer->capacity) HASHY_WARNING_RETURN(0, stderr, "index >= buffer->capacity");
-  return &buffer->items[index];
-}
-
-int hashy_bucket_clear(HashyBucket* bucket, bool free_values) {
-  if (!bucket) return 0;
   if (bucket->map != 0) {
-    hashy_map_clear(bucket->map, free_values);
+    hashy_map_clear(bucket->map);
+  }
+
+  return 1;
+}
+
+int hashy_bucket_destroy(HashyBucket* bucket) {
+  HASHY_ASSERT_RETURN(bucket != 0, 0);
+
+  if (bucket->value != 0 && bucket->config.free_values_on_destroy) {
+    free(bucket->value);
+    bucket->value = 0;
+  }
+  
+  bucket->value = 0;
+  hashy_string_clear(&bucket->key);
+  bucket->index = 0;
+  bucket->hash = 0;
+  bucket->is_set = false;
+
+  if (bucket->map != 0) {
+    hashy_map_destroy(bucket->map);
     free(bucket->map);
   }
 
   bucket->map = 0;
 
-  if (bucket->key) {
-    free(bucket->key);
-  }
-
-  bucket->key = 0;
-
-  if (bucket->value != 0 && free_values == true) {
-    free(bucket->value);
-  }
-
-  bucket->value = 0;
-
   return 1;
+}
+
+static inline bool bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
+  if (!bucket->is_set) return true;
+  return (bucket->hash == hash && bucket->index == index) && strcmp(bucket->key.value, key) == 0;
+}
+
+int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {
+  HASHY_ASSERT_RETURN(bucket != 0, 0);
+  HASHY_ASSERT_RETURN(key != 0, 0);
+  HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
+  HASHY_ASSERT_RETURN(num_collisions != 0, 0);
+
+  if (bucket_matches(bucket, key, index, hash)) {
+    if (bucket->value != 0 && bucket->config.free_values_on_overwrite) {
+      free(bucket->value);
+      bucket->value = 0;
+    }
+    bucket->value = value;
+    bucket->key = bucket->is_set ? bucket->key : hashy_string_make(key);
+    bucket->index = index;
+    bucket->hash = hash;
+    bucket->is_set = true;
+    return 1;
+  }
+
+  if (bucket->map == 0) {
+    bucket->map = (HashyMap*)calloc(1, sizeof(HashyMap));
+  }
+
+  HASHY_ASSERT_RETURN(bucket->map != 0, 0);
+
+  if (!bucket->map->initialized) {
+    HASHY_ASSERT_RETURN(hashy_map_init(bucket->map, bucket->config) == 1, 0);
+  }
+
+  int64_t n_collisions = *num_collisions;
+  n_collisions += 1;
+  *num_collisions = n_collisions;
+
+  return hashy_map_set(bucket->map, key, value);
+}
+
+int hashy_bucket_unset(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
+  HASHY_ASSERT_RETURN(bucket != 0, 0);
+  HASHY_ASSERT_RETURN(key != 0, 0);
+  HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
+
+  if (bucket->is_set && bucket_matches(bucket, key, index, hash)) {
+    if (bucket->value != 0 && bucket->config.free_values_on_unset) {
+      free(bucket->value);
+      bucket->value = 0;
+    }
+    bucket->value = 0;
+    bucket->index = 0;
+    bucket->hash = 0;
+    bucket->is_set = false;
+    hashy_string_clear(&bucket->key);
+    return 1;
+  }
+
+  if (bucket->map != 0) {
+    return hashy_map_unset(bucket->map, key);
+  }
+
+  return 0;
+}
+
+void* hashy_bucket_get(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
+  HASHY_ASSERT_RETURN(bucket != 0, 0);
+  HASHY_ASSERT_RETURN(key != 0, 0);
+  HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
+
+  if (bucket_matches(bucket, key, index, hash)) {
+    return bucket->value;
+  }
+
+  if (bucket->map != 0) {
+    return hashy_map_get(bucket->map, key);
+  }
+
+  return 0;
+}
+
+HashyBucket* hashy_bucket_get_bucket(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
+  HASHY_ASSERT_RETURN(bucket != 0, 0);
+  HASHY_ASSERT_RETURN(key != 0, 0);
+  HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
+
+  if (bucket->is_set && bucket_matches(bucket, key, index, hash)) return bucket;
+
+  if (bucket->map != 0) {
+    return hashy_map_get_bucket(bucket->map, key);
+  }
+
+  return 0;
 }
