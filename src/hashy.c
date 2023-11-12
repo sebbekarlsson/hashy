@@ -104,12 +104,17 @@ typedef struct {
   uint64_t index;
 } HashyHash;
 
-static inline HashyBucket* find_bucket_for_key(HashyMap* map, const char* key, HashyHash* out) {
+static inline HashyBucket* find_bucket_for_key(HashyMap* map, const char* key, HashyHash* out, bool create) {
   uint64_t hash = hashy_hash_func(key, map->buckets.length);
   uint64_t index = hash % map->buckets.length;
   HASHY_ASSERT_RETURN(index >= 0, 0);
   HASHY_ASSERT_RETURN(index < map->buckets.length, 0);
   HashyBucket* bucket = &map->buckets.items[index];
+
+  if (!create) {
+    if (!hashy_bucket_matches(bucket, key, index, hash)) return 0;
+    return bucket;
+  }
 
   out->hash = hash;
   out->index = index;
@@ -126,14 +131,14 @@ static inline HashyBucket* find_bucket_for_key(HashyMap* map, const char* key, H
 }
 
 static inline HashyBucket* find_bucket(HashyMap* map, const char* key, HashyHash* out, bool create) {
-  HashyBucket* bucket = find_bucket_for_key(map, key, out);
+  HashyBucket* bucket = find_bucket_for_key(map, key, out, create);
   if (bucket != 0) return bucket;
 
   HashyMap* next = map->next;
   HashyMap* prev = map;
 
   while (next != 0) {
-    bucket = find_bucket_for_key(next, key, out);
+    bucket = find_bucket_for_key(next, key, out, create);
     if (bucket != 0) {
       return bucket;
     }
@@ -161,7 +166,7 @@ static inline HashyBucket* find_bucket(HashyMap* map, const char* key, HashyHash
   HashyMap* root = get_root(map);
   root->num_collisions += 1;
 
-  bucket = find_bucket_for_key(prev->next, key, out);
+  bucket = find_bucket_for_key(prev->next, key, out, true);
   HASHY_ASSERT_RETURN(bucket != 0, 0);
   
 

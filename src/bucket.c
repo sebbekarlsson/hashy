@@ -128,26 +128,19 @@ int hashy_bucket_unset(HashyBucket* bucket, const char* key, uint64_t index, uin
   HASHY_ASSERT_RETURN(key != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
 
-  if (bucket->is_set && hashy_bucket_matches(bucket, key, index, hash)) {
-    if (bucket->value != 0 && bucket->config.free_values_on_unset) {
-      free(bucket->value);
-      bucket->value = 0;
-    }
+  if (!hashy_bucket_matches(bucket, key, index, hash)) return 0;
+  
+  if (bucket->is_set && bucket->value != 0 && bucket->config.free_values_on_unset) {
+    free(bucket->value);
     bucket->value = 0;
-    bucket->index = 0;
-    bucket->hash = 0;
-    bucket->is_set = false;
-    hashy_string_clear(&bucket->key);
-    return 1;
   }
+  bucket->value = 0;
+  bucket->index = 0;
+  bucket->hash = 0;
+  bucket->is_set = false;
+  hashy_string_clear(&bucket->key);
+  return 1;
 
-  /*
-  if (bucket->map != 0) {
-    return hashy_map_unset(bucket->map, key);
-  }
-  */
-
-  return 0;
 }
 
 void* hashy_bucket_get(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
