@@ -5,6 +5,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static inline HashyMap* get_root(HashyMap* map) {
+  if (map->root != 0) return map->root;
+  return map;
+}
+
+static inline HashyMap* get_last(HashyMap* map) {
+  HashyMap* next = map->next;
+
+  while (next != 0) {
+
+    if (next->next == 0) return next;
+    
+    next = next->next;
+  }
+
+  return next;
+}
+
 static uint64_t hashy_hash_func(const char* value, uint64_t capacity) {
   uint64_t hash = 0;
   unsigned char* str = (unsigned char*)value;
@@ -29,6 +47,7 @@ int hashy_map_init(HashyMap* map, HashyConfig cfg) {
   map->num_inserts = 0;
   map->num_unsets = 0;
   map->num_collisions = 0;
+  map->num_pages = 0;
   map->config = cfg;
   map->initialized = true;
   return 1;
@@ -50,12 +69,29 @@ int hashy_map_clear(HashyMap* map) {
   }
 
   if (map->next != 0) {
-    if (map->config.free_linked_on_clear) {
-      hashy_map_destroy(map->next);
-      free(map->next);
-      map->next = 0;
-    } else {
-      hashy_map_clear(map->next);
+    HashyMap* last = get_last(map);
+
+    HASHY_ASSERT_RETURN(last != 0, 0);
+    HASHY_ASSERT_RETURN(last != map, 0);
+    HashyMap* next = last;
+
+    while (next != 0) {
+      HashyMap* tmp = next->prev;
+      if (tmp == 0) break;
+      HASHY_ASSERT_CONTINUE(tmp != next);
+      HASHY_ASSERT_CONTINUE(next != map);
+      HASHY_ASSERT_CONTINUE(next == tmp->next);
+
+      if (map->config.free_linked_on_clear) {
+        hashy_map_destroy(next);
+        free(next); // next is (tmp->next)
+        tmp->next = 0;
+        map->num_pages -= 1;
+      } else {
+        hashy_map_clear(next);
+      }
+
+      next = tmp;
     }
   }
 
@@ -68,6 +104,7 @@ int hashy_map_destroy(HashyMap* map) {
   map->num_inserts = 0;
   map->num_unsets = 0;
   map->num_collisions = 0;
+  map->num_pages = 0;
 
   if (map->buckets.items != 0) {
     HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
@@ -94,9 +131,19 @@ int hashy_map_destroy(HashyMap* map) {
   return 1;
 }
 
-static inline HashyMap* get_root(HashyMap* map) {
-  if (map->root != 0) return map->root;
-  return map;
+int64_t hashy_map_count_pages(HashyMap* map) {
+  HASHY_ASSERT_RETURN(map != 0, 0);
+  if (map->initialized == false) return 0;
+
+  HashyMap* next = map->next;
+  int64_t count = 0;
+
+  while (next != 0) {
+    count += 1;
+    next = next->next;
+  }
+
+  return count;
 }
 
 typedef struct {
@@ -162,9 +209,11 @@ static inline HashyBucket* find_bucket(HashyMap* map, const char* key, HashyHash
   next_config.capacity += map->config.capacity / 2;
   HASHY_ASSERT_RETURN(hashy_map_init(prev->next, next_config) == 1, 0);
   prev->next->root = map;
+  prev->next->prev = prev;
 
   HashyMap* root = get_root(map);
   root->num_collisions += 1;
+  root->num_pages += 1;
 
   bucket = find_bucket_for_key(prev->next, key, out, true);
   HASHY_ASSERT_RETURN(bucket != 0, 0);

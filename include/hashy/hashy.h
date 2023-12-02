@@ -18,11 +18,14 @@ typedef struct HASHY_MAP_STRUCT {
   int64_t num_inserts;
   int64_t num_unsets;
   int64_t num_collisions;
+  int64_t num_pages;
   
   bool initialized;
   HashyConfig config;
 
+
   struct HASHY_MAP_STRUCT* root;
+  struct HASHY_MAP_STRUCT* prev;
   struct HASHY_MAP_STRUCT* next;
 } HashyMap;
 
@@ -32,6 +35,8 @@ int hashy_map_clear(HashyMap* map);
 
 int hashy_map_destroy(HashyMap* map);
 
+int64_t hashy_map_count_pages(HashyMap* map);
+
 int hashy_map_set(HashyMap* map, const char* key, void* value);
 int hashy_map_unset(HashyMap* map, const char* key);
 
@@ -40,6 +45,7 @@ void* hashy_map_get(HashyMap* map, const char* key);
 HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key);
 
 int hashy_map_get_keys(HashyMap* map, HashyKeyList* out);
+
 
 typedef struct {
   HashyBucket* bucket;

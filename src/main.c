@@ -182,7 +182,7 @@ static void test_big() {
 
     free(back_value);
     back_value = 0;
-  }
+  } 
 
   hashy_map_destroy(&map);
 }
@@ -259,7 +259,7 @@ typedef struct {
 //}
 
 static void test_set_vectors() {
-  int64_t n_vectors = 64;
+  int64_t n_vectors = 640;
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_clear = true, .free_values_on_overwrite = true, .free_values_on_unset = true, .free_linked_on_clear = true });
 
@@ -321,7 +321,20 @@ static void test_set_vectors() {
     }
   }
 
+  int64_t counted = hashy_map_count_pages(&map);
+  int64_t cached_counted = map.num_pages;
+
+  printf("counted: %ld, cached counted: %ld\n", counted, cached_counted);
+  HASHY_TASSERT(counted == cached_counted);
+
   hashy_map_clear(&map);
+
+  counted = hashy_map_count_pages(&map);
+  HASHY_TASSERT(counted == 0);
+  cached_counted = map.num_pages;
+  printf("counted: %ld, cached counted: %ld\n", counted, cached_counted);
+  HASHY_TASSERT(cached_counted == 0);
+  HASHY_TASSERT(counted == cached_counted);
 
 
   for (int j = 0; j < 16; j++) {
