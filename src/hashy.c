@@ -53,6 +53,39 @@ int hashy_map_init(HashyMap* map, HashyConfig cfg) {
   return 1;
 }
 
+#define HASHY_USE_OLD_CLEAR 0
+
+#if HASHY_USE_OLD_CLEAR
+int hashy_map_clear(HashyMap* map) {
+  HASHY_ASSERT_RETURN(map != 0, 0);
+
+  map->num_inserts = 0;
+  map->num_collisions = 0;
+  map->num_unsets = 0;
+
+  if (map->buckets.items != 0) {
+    HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
+
+    for (uint64_t i = 0; i < map->buckets.length; i++) {
+      hashy_bucket_clear(&map->buckets.items[i]);
+    }
+  }
+
+  if (map->next != 0) {
+    if (map->config.free_linked_on_clear) {
+      hashy_map_destroy(map->next);
+      free(map->next);
+      map->next = 0;
+      map->num_pages = MAX(0, map->num_pages-1);
+    } else {
+      hashy_map_clear(map->next);
+    }
+  }
+
+  return 1;
+}
+#else
+
 int hashy_map_clear(HashyMap* map) {
   HASHY_ASSERT_RETURN(map != 0, 0);
 
@@ -98,6 +131,8 @@ int hashy_map_clear(HashyMap* map) {
 
   return 1;
 }
+
+#endif
 
 int hashy_map_destroy(HashyMap* map) {
   HASHY_ASSERT_RETURN(map != 0, 0);

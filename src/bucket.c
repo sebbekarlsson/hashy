@@ -74,7 +74,7 @@ int hashy_bucket_destroy(HashyBucket* bucket) {
 }
 
 bool hashy_bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash) {
-  return strcmp(bucket->key.value, key) == 0;
+  return bucket->key.value[0] == key[0] && strcmp(bucket->key.value, key) == 0;
 }
 
 int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {

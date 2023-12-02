@@ -39,10 +39,10 @@ int main(int argc, char *argv[]) {
 
   printf("num_collisions: %ld\n", map.num_collisions);
   
-  #if 0
+  #if 1
   MEASURE_TIME("hashy_map_set (duplicate)",
     for (int i = 0; i < BENCH_MOCK_DATA_LENGTH * 2; i++) {
-      BenchMockSample sample = samples[i];
+      BenchMockSample sample = samples[i % BENCH_MOCK_DATA_LENGTH];
       const char* key = sample.key;
       const char* value = sample.value;
       hashy_map_set(&map, key, (void*)value);
