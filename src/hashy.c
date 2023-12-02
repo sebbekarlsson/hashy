@@ -87,6 +87,7 @@ int hashy_map_clear(HashyMap* map) {
         free(next); // next is (tmp->next)
         tmp->next = 0;
         map->num_pages -= 1;
+        map->num_pages = MAX(map->num_pages, 0);
       } else {
         hashy_map_clear(next);
       }
