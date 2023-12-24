@@ -1,6 +1,7 @@
 #include <hashy/hashy.h>
 #include <hashy/macros.h>
 #include <hashy/constants.h>
+#include <hashy/cantor.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,10 +36,12 @@ static uint64_t hashy_hash_func(const char* value, uint64_t capacity) {
   return hash;
 }
 
-static uint64_t hashy_hashi_func(int64_t value, uint64_t capacity) {
-  uint64_t hash = (uint64_t)value;
+static uint64_t hashy_hashi_func(HashyI642 value, uint64_t capacity) {
+  uint64_t a = (uint64_t)value.a;
+  uint64_t b = (uint64_t)value.b;
 
-  // hash = ((hash << 6) + (hash << 16) - hash);
+  uint64_t hash = ((uint64_t)hashy_cantor(a, b));
+  //hash = ((hash << 6) + (hash << 16) - hash);
 
   return hash;
 }
@@ -201,14 +204,14 @@ static inline HashyBucket* find_bucket_for_key(HashyMap* map, const char* key, H
   HASHY_ASSERT_RETURN(index >= 0, 0);
   HASHY_ASSERT_RETURN(index < map->buckets.length, 0);
   HashyBucket* bucket = &map->buckets.items[index];
+  out->hash = hash;
+  out->index = index;
 
   if (!create) {
     if (!hashy_bucket_matches(bucket, key, index, hash)) return 0;
     return bucket;
   }
 
-  out->hash = hash;
-  out->index = index;
   
   if (!bucket->initialized) {
     HASHY_ASSERT_RETURN(hashy_bucket_init(bucket, map->config) == 1, 0);
@@ -221,20 +224,25 @@ static inline HashyBucket* find_bucket_for_key(HashyMap* map, const char* key, H
   return bucket;
 }
 
-static inline HashyBucket* find_bucket_for_keyi(HashyMap* map, int64_t key, HashyHash* out, bool create) {
+static inline HashyBucket* find_bucket_for_keyi(HashyMap* map, HashyI642 key, HashyHash* out, bool create) {
   uint64_t hash = hashy_hashi_func(key, map->buckets.length);
   uint64_t index = hash % map->buckets.length;
   HASHY_ASSERT_RETURN(index >= 0, 0);
   HASHY_ASSERT_RETURN(index < map->buckets.length, 0);
   HashyBucket* bucket = &map->buckets.items[index];
+  out->hash = hash;
+  out->index = index;
 
   if (!create) {
     if (!hashy_bucket_matchesi(bucket, key, index, hash)) return 0;
+
+    if (!bucket->initialized) {
+      HASHY_ASSERT_RETURN(hashy_bucket_init(bucket, map->config) == 1, 0);
+    }
+    
     return bucket;
   }
 
-  out->hash = hash;
-  out->index = index;
   
   if (!bucket->initialized) {
     HASHY_ASSERT_RETURN(hashy_bucket_init(bucket, map->config) == 1, 0);
@@ -292,7 +300,7 @@ static inline HashyBucket* find_bucket(HashyMap* map, const char* key, HashyHash
   return bucket;
 }
 
-static inline HashyBucket* find_bucketi(HashyMap* map, int64_t key, HashyHash* out, bool create) {
+static inline HashyBucket* find_bucketi(HashyMap* map, HashyI642 key, HashyHash* out, bool create) {
   HashyBucket* bucket = find_bucket_for_keyi(map, key, out, create);
   if (bucket != 0) return bucket;
 
@@ -409,7 +417,7 @@ HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key) {
 }
 
 
-int hashy_map_seti(HashyMap* map, int64_t key, void* value) {
+int hashy_map_seti(HashyMap* map, HashyI642 key, void* value) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
@@ -430,7 +438,7 @@ int hashy_map_seti(HashyMap* map, int64_t key, void* value) {
   return 1;
 }
 
-int hashy_map_unseti(HashyMap* map, int64_t key) {
+int hashy_map_unseti(HashyMap* map, HashyI642 key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
@@ -450,7 +458,7 @@ int hashy_map_unseti(HashyMap* map, int64_t key) {
 
   return 1;
 }
-void* hashy_map_geti(HashyMap* map, int64_t key) {
+void* hashy_map_geti(HashyMap* map, HashyI642 key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
@@ -464,7 +472,7 @@ void* hashy_map_geti(HashyMap* map, int64_t key) {
   return hashy_bucket_geti(bucket, key, bhash.index, bhash.hash);
 }
 
-HashyBucket* hashy_map_get_bucketi(HashyMap* map, int64_t key) {
+HashyBucket* hashy_map_get_bucketi(HashyMap* map, HashyI642 key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);

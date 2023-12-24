@@ -54,12 +54,15 @@ static void test_simple_i() {
   Person* p2 = calloc(1, sizeof(Person));
   p2->age = 64;
 
-  HASHY_TASSERT(hashy_map_seti(&map, 0, p) != 0);
-  HASHY_TASSERT(hashy_map_seti(&map, 1, p2) != 0);
+  HashyI642 key_0 = {3, 3124};
+  HashyI642 key_1 = {1, 7};
+
+  HASHY_TASSERT(hashy_map_seti(&map, key_0, p) != 0);
+  HASHY_TASSERT(hashy_map_seti(&map, key_1, p2) != 0);
 
 
-  Person* a = hashy_map_geti(&map, 0);
-  Person* b = hashy_map_geti(&map, 1);
+  Person* a = hashy_map_geti(&map, key_0);
+  Person* b = hashy_map_geti(&map, key_1);
 
   HASHY_TASSERT(a != 0);
   HASHY_TASSERT(b != 0);
@@ -215,7 +218,7 @@ static void test_big() {
 
 static void test_big_i() {
 
-  int64_t keys[] = {11, 148, 73, 33, 24, 244, 14, 182, 94, 171, 92, 90, 71, 241, 28, 239, 183, 179, 224, 102, 132, 75, 252, 78, 87, 106, 155, 122, 119, 204, 143, 162, 108, 174, 189, 68, 60, 161, 105, 12, 66, 164, 181, 1, 225, 168, 9, 51, 112, 243, 88, 149, 173, 17, 50, 114, 89, 222, 79, 249, 139, 45, 124, 242, 113, 118, 150, 232, 206, 135, 83, 134, 15, 85, 193, 212, 95, 234, 194, 123, 185, 48, 126, 248, 210, 37, 226, 233, 223, 61, 125, 180, 221, 220, 96, 253, 169, 23, 170, 216, 21, 137, 30, 172, 195, 5, 41, 63, 165, 128, 158, 3, 18, 231, 31, 72, 238, 107, 196, 209, 57, 97, 25, 56, 32, 27, 205, 111, 101, 167, 103, 120, 115, 26, 199, 82, 236, 246, 227, 70, 62, 47, 184, 6, 91, 136, 58, 175, 138, 251, 229, 67, 131, 142, 213, 177, 110, 151, 65, 197, 39, 133, 144, 218, 254, 230, 198, 127, 129, 13, 76, 176, 141, 8, 104, 109, 215,
+  int64_t keys[] = {11, 148, 11, 33, 24, 244, 14, 182, 94, 171, 92, 90, 71, 241, 28, 239, 183, 179, 224, 102, 132, 75, 252, 78, 87, 106, 155, 122, 119, 204, 143, 162, 108, 174, 189, 68, 60, 161, 105, 12, 66, 164, 181, 1, 225, 168, 9, 51, 112, 243, 88, 149, 173, 17, 50, 114, 89, 222, 79, 249, 139, 45, 124, 242, 113, 118, 150, 232, 206, 135, 83, 134, 15, 85, 193, 212, 95, 234, 194, 123, 185, 48, 126, 248, 210, 37, 226, 233, 223, 61, 125, 180, 221, 220, 96, 253, 169, 23, 170, 216, 21, 137, 30, 172, 195, 5, 41, 63, 165, 128, 158, 3, 18, 231, 31, 72, 238, 107, 196, 209, 57, 97, 25, 56, 32, 27, 205, 111, 101, 167, 103, 120, 115, 26, 199, 82, 236, 246, 227, 70, 62, 47, 184, 6, 91, 136, 58, 175, 138, 251, 229, 67, 131, 142, 213, 177, 110, 151, 65, 197, 39, 133, 144, 218, 254, 230, 198, 127, 129, 13, 76, 176, 141, 8, 104, 109, 215,
 153, 235, 191, 217, 237, 69, 36, 159, 54, 46, 203, 55, 154, 34, 38, 130, 250, 200, 192, 7, 201, 64, 2, 98, 152, 190, 4, 207, 240, 86, 59, 74, 187, 156, 214, 145, 146, 42, 208, 116, 247, 20, 19, 99, 81, 245, 166, 93, 163, 228, 211, 255, 44, 49, 22, 29, 178, 0, 100, 53, 202, 117, 121, 157, 84, 77, 40, 160, 10, 140, 35, 80, 52, 186, 16, 219, 43, 188, 147};
 
   const char* values[] = {
@@ -239,33 +242,43 @@ static void test_big_i() {
 
 
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256 });
+  hashy_map_init(&map, (HashyConfig){ .capacity = nrkeys });
 
-  for (int64_t i = 0; i < nrkeys; i++) {
-    int64_t key = keys[i];
+  for (int64_t i = 0; i < nrkeys*9; i++) {
+    int64_t key_a = keys[i % nrkeys];
     const char* expected = values[i % nrvalues];
     char* value = strdup(values[i % nrvalues]);
 
-    HASHY_TASSERT(hashy_map_seti(&map, key, value) != 0);
+    HashyI642 key = (HashyI642){ key_a, keys[key_a % nrkeys] };
+
+    for (int j = 0; j < 8; j++) {
+      HASHY_TASSERT(hashy_map_seti(&map, key, value) != 0);
+    }
 
     HashyBucket* bucket = hashy_map_get_bucketi(&map, key);
 
     HASHY_TASSERT(bucket != 0);
 
-    HASHY_TASSERT(bucket->keyi == key);
+    HASHY_TASSERT(bucket->pair.a == key.a);
+    HASHY_TASSERT(bucket->pair.b == key.b);
 
     char* back_value = hashy_map_geti(&map, key);
+
+    //  printf("(%ld, %ld): %ld\n", bucket->pair.a, bucket->pair.b, bucket->hash);
 
     HASHY_TASSERT(back_value != 0);
     HASHY_TASSERT(strcmp(back_value, expected) == 0);
 
-    hashy_map_unseti(&map, key);
+    if (i > nrkeys / 2 && i % 2 == 0) {
+      hashy_map_unseti(&map, key);
+    }
 
     free(back_value);
     back_value = 0;
   } 
 
   printf("Collisions: %ld\n", map.num_collisions);
+  printf("Pages: %ld\n", map.num_pages);
   hashy_map_destroy(&map);
 }
 
@@ -285,7 +298,8 @@ static void test_get_without_set_i() {
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
 
-  void* yo = hashy_map_geti(&map, 3125);
+  HashyI642 key = { 311, 2 };
+  void* yo = hashy_map_geti(&map, key);
 
   HASHY_TASSERT(yo == 0);
 
@@ -307,8 +321,9 @@ static void test_unset_without_values_i() {
   HashyMap map = {0};
   hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
 
-  hashy_map_unseti(&map, 4828);
-  void* yo = hashy_map_geti(&map, 4828);
+  HashyI642 key = {4828, 7};
+  hashy_map_unseti(&map, key);
+  void* yo = hashy_map_geti(&map, key);
   HASHY_TASSERT(yo == 0);
   hashy_map_destroy(&map);
   HASHY_TASSERT(map.buckets.items == 0);
@@ -354,7 +369,7 @@ static void test_set_clear_and_get_i() {
   hashy_map_init(&map, (HashyConfig){ .capacity = 16, .free_values_on_clear = true, .free_values_on_destroy = true });
 
 
-  int64_t key = 7314;
+  HashyI642 key = {441, 84};
   const char* pname = "John Doe";
   char* name = strdup(pname);
   hashy_map_seti(&map, key, name);

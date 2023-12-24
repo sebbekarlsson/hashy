@@ -5,6 +5,7 @@
 #include <hashy/constants.h>
 #include <hashy/string.h>
 #include <hashy/config.h>
+#include <hashy/i2.h>
 
 
 struct HASHY_MAP_STRUCT;
@@ -12,7 +13,7 @@ struct HASHY_BUCKET_BUFFER;
 
 typedef struct {
   HashyString key;
-  int64_t keyi;
+  HashyI642 pair;
   HashyConfig config;
 
   uint64_t index;
@@ -40,20 +41,22 @@ void* hashy_bucket_get(HashyBucket* bucket, const char* key, uint64_t index, uin
 
 HashyBucket* hashy_bucket_get_bucket(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
 
+bool hashy_bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-int hashy_bucket_seti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions);
+int hashy_bucket_seti(HashyBucket* bucket, HashyI642 key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions);
 
-int hashy_bucket_unseti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash);
+int hashy_bucket_unseti(HashyBucket* bucket, HashyI642 key, uint64_t index, uint64_t hash);
 
-void* hashy_bucket_geti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash);
+void* hashy_bucket_geti(HashyBucket* bucket, HashyI642 key, uint64_t index, uint64_t hash);
 
-HashyBucket* hashy_bucket_geti_bucket(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash);
+HashyBucket* hashy_bucket_geti_bucket(HashyBucket* bucket, HashyI642 key, uint64_t index, uint64_t hash);
+
+bool hashy_bucket_matchesi(HashyBucket* bucket, HashyI642 key, uint64_t index, uint64_t hash);
 
 
 ///////////////////////////////////////////////////
 
-bool hashy_bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash);
 
-bool hashy_bucket_matchesi(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash);
 #endif

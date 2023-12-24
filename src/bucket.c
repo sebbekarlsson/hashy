@@ -13,7 +13,7 @@ int hashy_bucket_init(HashyBucket* bucket, HashyConfig cfg) {
   
   hashy_string_clear(&bucket->key);
   //bucket->map = 0;
-  bucket->keyi = 0;
+  bucket->pair = (HashyI642){0};
   bucket->value = 0;
   bucket->hash = 0;
   bucket->index = 0;
@@ -32,7 +32,7 @@ int hashy_bucket_clear(HashyBucket* bucket) {
   bucket->value = 0;
   hashy_string_clear(&bucket->key);
   bucket->index = 0;
-  bucket->keyi = 0;
+  bucket->pair = (HashyI642){0};
   bucket->hash = 0;
   bucket->is_set = false;
 
@@ -59,7 +59,7 @@ int hashy_bucket_destroy(HashyBucket* bucket) {
   }
   
   bucket->value = 0;
-  bucket->keyi = 0;
+  bucket->pair = (HashyI642){0};
   bucket->index = 0;
   bucket->hash = 0;
   bucket->is_set = false;
@@ -80,8 +80,8 @@ bool hashy_bucket_matches(HashyBucket* bucket, const char* key, uint64_t index, 
   return bucket->key.value[0] == key[0] && strcmp(bucket->key.value, key) == 0;
 }
 
-bool hashy_bucket_matchesi(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash) {
-  return bucket->keyi == key;
+bool hashy_bucket_matchesi(HashyBucket* bucket, HashyI642 key, uint64_t index, uint64_t hash) {
+  return bucket->pair.a == key.a && bucket->pair.b == key.b;
 }
 
 int hashy_bucket_set(HashyBucket* bucket, const char* key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {
@@ -154,7 +154,7 @@ HashyBucket* hashy_bucket_get_bucket(HashyBucket* bucket, const char* key, uint6
 }
 
 
-int hashy_bucket_seti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {
+int hashy_bucket_seti(HashyBucket* bucket, HashyI642 key, uint64_t index, uint64_t hash, void* value, int64_t* num_collisions) {
   HASHY_ASSERT_RETURN(bucket != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
   HASHY_ASSERT_RETURN(num_collisions != 0, 0);
@@ -166,7 +166,7 @@ int hashy_bucket_seti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t
     }
     bucket->value = value;
     if (bucket->is_set == false) {
-      bucket->keyi = key;
+      bucket->pair = key;
       //bucket->key = hashy_string_make(key);
     }
     bucket->index = index;
@@ -180,7 +180,7 @@ int hashy_bucket_seti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t
   return 0;
 }
 
-int hashy_bucket_unseti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash) {
+int hashy_bucket_unseti(HashyBucket* bucket,  HashyI642 key, uint64_t index, uint64_t hash) {
   HASHY_ASSERT_RETURN(bucket != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
 
@@ -199,7 +199,7 @@ int hashy_bucket_unseti(HashyBucket* bucket, int64_t key, uint64_t index, uint64
   return 1;
 }
 
-void* hashy_bucket_geti(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash) {
+void* hashy_bucket_geti(HashyBucket* bucket,  HashyI642 key, uint64_t index, uint64_t hash) {
   HASHY_ASSERT_RETURN(bucket != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
 
@@ -210,7 +210,7 @@ void* hashy_bucket_geti(HashyBucket* bucket, int64_t key, uint64_t index, uint64
   return 0;
 }
 
-HashyBucket* hashy_bucket_geti_bucket(HashyBucket* bucket, int64_t key, uint64_t index, uint64_t hash) {
+HashyBucket* hashy_bucket_geti_bucket(HashyBucket* bucket,  HashyI642 key, uint64_t index, uint64_t hash) {
   HASHY_ASSERT_RETURN(bucket != 0, 0);
   HASHY_ASSERT_RETURN(bucket->initialized == true, 0);
   

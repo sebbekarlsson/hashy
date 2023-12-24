@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <hashy/keylist.h>
 #include <hashy/config.h>
+#include <hashy/i2.h>
 
 struct HASHY_MAP_STRUCT;
 
@@ -42,10 +43,10 @@ int hashy_map_unset(HashyMap* map, const char* key);
 void* hashy_map_get(HashyMap* map, const char* key);
 HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key);
 
-int hashy_map_seti(HashyMap* map, int64_t key, void* value);
-int hashy_map_unseti(HashyMap* map, int64_t key);
-void* hashy_map_geti(HashyMap* map, int64_t key);
-HashyBucket* hashy_map_get_bucketi(HashyMap* map, int64_t key);
+int hashy_map_seti(HashyMap* map, HashyI642 key, void* value);
+int hashy_map_unseti(HashyMap* map, HashyI642 key);
+void* hashy_map_geti(HashyMap* map, HashyI642 key);
+HashyBucket* hashy_map_get_bucketi(HashyMap* map, HashyI642 key);
 
 int hashy_map_get_keys(HashyMap* map, HashyKeyList* out);
 
