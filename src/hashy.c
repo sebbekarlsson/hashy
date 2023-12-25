@@ -300,7 +300,7 @@ static inline HashyBucket* find_bucket(HashyMap* map, const char* key, HashyHash
   return bucket;
 }
 
-static inline HashyBucket* find_bucketi(HashyMap* map, HashyI642 key, HashyHash* out, bool create) {
+static inline HashyBucket* find_bucketi(HashyMap* map, HashyI642 key, HashyHash* out, bool create, bool is_get) {
   HashyBucket* bucket = find_bucket_for_keyi(map, key, out, create);
   if (bucket != 0) return bucket;
 
@@ -310,7 +310,9 @@ static inline HashyBucket* find_bucketi(HashyMap* map, HashyI642 key, HashyHash*
   while (next != 0) {
     bucket = find_bucket_for_keyi(next, key, out, create);
     if (bucket != 0) {
-      return bucket;
+      if (!(is_get && bucket->is_set == false)) {
+        return bucket;
+      }
     }
 
     if (next->next == 0) {
@@ -424,7 +426,7 @@ int hashy_map_seti(HashyMap* map, HashyI642 key, void* value) {
   HASHY_ASSERT_RETURN(map->buckets.length == map->config.capacity, 0);
 
   HashyHash bhash = {0};
-  HashyBucket* bucket = find_bucketi(map, key, &bhash, true);
+  HashyBucket* bucket = find_bucketi(map, key, &bhash, true, false);
   HASHY_ASSERT_RETURN(bucket != 0, 0);
 
   bool was_set = bucket->is_set;
@@ -445,7 +447,7 @@ int hashy_map_unseti(HashyMap* map, HashyI642 key) {
   HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
 
   HashyHash bhash = {0};
-  HashyBucket* bucket = find_bucketi(map, key, &bhash, false);
+  HashyBucket* bucket = find_bucketi(map, key, &bhash, false, false);
   if (bucket == 0) return 0;
 
   bool was_set = bucket->is_set;
@@ -466,7 +468,7 @@ void* hashy_map_geti(HashyMap* map, HashyI642 key) {
 
   
   HashyHash bhash = {0};
-  HashyBucket* bucket = find_bucketi(map, key, &bhash, false);
+  HashyBucket* bucket = find_bucketi(map, key, &bhash, false, true);
   if (bucket == 0) return 0;
 
   return hashy_bucket_geti(bucket, key, bhash.index, bhash.hash);
@@ -479,7 +481,7 @@ HashyBucket* hashy_map_get_bucketi(HashyMap* map, HashyI642 key) {
   HASHY_ASSERT_RETURN(map->buckets.length > 0, 0);
 
   HashyHash bhash = {0};
-  return find_bucketi(map, key, &bhash, false);
+  return find_bucketi(map, key, &bhash, false, true);
 }
 
 int hashy_map_get_keys(HashyMap* map, HashyKeyList* out) {
