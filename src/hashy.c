@@ -244,7 +244,7 @@ static inline HashyBucket* find_bucket_for_key(HashyMap* map, const char* key, H
   out->index = index;
 
   if (!create) {
-    if (!hashy_bucket_matches(bucket, key, index, hash)) return 0;
+    if (bucket->initialized == false || !hashy_bucket_matches(bucket, key, index, hash)) return 0;
     return bucket;
   }
 
