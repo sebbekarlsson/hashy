@@ -5,6 +5,7 @@
 #include <hashy/keylist.h>
 #include <hashy/config.h>
 #include <hashy/i2.h>
+#include <hashy/lock.h>
 
 struct HASHY_MAP_STRUCT;
 
@@ -28,6 +29,8 @@ typedef struct HASHY_MAP_STRUCT {
   struct HASHY_MAP_STRUCT* root;
   struct HASHY_MAP_STRUCT* prev;
   struct HASHY_MAP_STRUCT* next;
+
+  HashyMutex lock;
 } HashyMap;
 
 int hashy_map_init(HashyMap* map, HashyConfig cfg);

@@ -15,7 +15,7 @@ target_compile_options(hashy PUBLIC -fPIC)
 target_compile_options(hashy_static PUBLIC -fPIC)
 target_compile_options(hashy_e PUBLIC -fPIC)
 
-set(HASHY_LIBS m)
+set(HASHY_LIBS m pthread)
 target_link_libraries(hashy PUBLIC ${HASHY_LIBS})
 target_link_libraries(hashy_static PUBLIC ${HASHY_LIBS})
 target_link_libraries(hashy_e PUBLIC ${HASHY_LIBS})

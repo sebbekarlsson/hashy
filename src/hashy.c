@@ -6,6 +6,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static inline void lock_mutex(HashyMap* map) {
+  if (map == 0 || map->config.threadsafe == false) return;
+  hashy_mutex_lock(&map->lock);
+}
+
+static inline void unlock_mutex(HashyMap* map) {
+  if (map == 0 || map->config.threadsafe == false) return;
+  hashy_mutex_unlock(&map->lock);
+}
+
+static inline void destroy_mutex(HashyMap* map) {
+  if (map == 0 || map->config.threadsafe == false) return;
+  hashy_mutex_destroy(&map->lock);
+}
+
 static inline HashyMap* get_root(HashyMap* map) {
   if (map->root != 0) return map->root;
   return map;
@@ -51,9 +66,16 @@ int hashy_map_init(HashyMap* map, HashyConfig cfg) {
   if (map->initialized) return 1;
   cfg.capacity = cfg.capacity ? cfg.capacity : HASHY_DEFAULT_CAPACITY;
 
+  if (cfg.threadsafe) {
+    if (!hashy_mutex_init(&map->lock)) {
+      HASHY_WARNING_RETURN(0, stderr, "Failed to create mutex.\n");
+    }
+  }
+
   map->buckets.items = (HashyBucket*)calloc(cfg.capacity, sizeof(HashyBucket));
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
   map->buckets.length = cfg.capacity;
+
 
   map->num_inserts = 0;
   map->num_unsets = 0;
@@ -97,7 +119,7 @@ int hashy_map_clear(HashyMap* map) {
 }
 #else
 
-int hashy_map_clear(HashyMap* map) {
+static inline int hashy_map_clear_(HashyMap* map) {
   HASHY_ASSERT_RETURN(map != 0, 0);
 
   map->num_inserts = 0;
@@ -143,9 +165,16 @@ int hashy_map_clear(HashyMap* map) {
   return 1;
 }
 
+int hashy_map_clear(HashyMap* map) {
+  lock_mutex(map);
+  int status = hashy_map_clear_(map);
+  unlock_mutex(map);
+  return status;
+}
+
 #endif
 
-int hashy_map_destroy(HashyMap* map) {
+static inline int hashy_map_destroy_(HashyMap* map) {
   HASHY_ASSERT_RETURN(map != 0, 0);
 
   map->num_inserts = 0;
@@ -176,6 +205,13 @@ int hashy_map_destroy(HashyMap* map) {
   map->root = 0;
   
   return 1;
+}
+
+int hashy_map_destroy(HashyMap* map) {
+  lock_mutex(map);
+  int status = hashy_map_destroy_(map);
+  unlock_mutex(map);
+  return status;
 }
 
 int64_t hashy_map_count_pages(HashyMap* map) {
@@ -284,6 +320,7 @@ static inline HashyBucket* find_bucket(HashyMap* map, const char* key, HashyHash
   prev->next = (HashyMap*)calloc(1, sizeof(HashyMap));
   HASHY_ASSERT_RETURN(prev->next != 0, 0);
   HashyConfig next_config = map->config;
+  next_config.threadsafe = false;
   next_config.capacity += map->config.capacity / 2;
   HASHY_ASSERT_RETURN(hashy_map_init(prev->next, next_config) == 1, 0);
   prev->next->root = map;
@@ -347,7 +384,7 @@ static inline HashyBucket* find_bucketi(HashyMap* map, HashyI642 key, HashyHash*
   return bucket;
 }
 
-int hashy_map_set(HashyMap* map, const char* key, void* value) {
+static inline int hashy_map_set_(HashyMap* map, const char* key, void* value) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(key != 0, 0);
@@ -369,7 +406,14 @@ int hashy_map_set(HashyMap* map, const char* key, void* value) {
   return 1;
 }
 
-int hashy_map_unset(HashyMap* map, const char* key) {
+int hashy_map_set(HashyMap* map, const char* key, void* value) {
+  lock_mutex(map);
+  int status = hashy_map_set_(map, key, value);
+  unlock_mutex(map);
+  return status;
+}
+
+static inline int hashy_map_unset_(HashyMap* map, const char* key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(key != 0, 0);
@@ -392,7 +436,14 @@ int hashy_map_unset(HashyMap* map, const char* key) {
   return 1;
 }
 
-void* hashy_map_get(HashyMap* map, const char* key) {
+int hashy_map_unset(HashyMap* map, const char* key) {
+  lock_mutex(map);
+  int status = hashy_map_unset_(map, key);
+  unlock_mutex(map);
+  return status;
+}
+
+static inline void* hashy_map_get_(HashyMap* map, const char* key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(key != 0, 0);
@@ -407,6 +458,13 @@ void* hashy_map_get(HashyMap* map, const char* key) {
   return hashy_bucket_get(bucket, key, bhash.index, bhash.hash);
 }
 
+void* hashy_map_get(HashyMap* map, const char* key) {
+  lock_mutex(map);
+  void* ptr = hashy_map_get_(map, key);
+  unlock_mutex(map);
+  return ptr;
+}
+
 HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
@@ -419,7 +477,7 @@ HashyBucket* hashy_map_get_bucket(HashyMap* map, const char* key) {
 }
 
 
-int hashy_map_seti(HashyMap* map, HashyI642 key, void* value) {
+static inline int hashy_map_seti_(HashyMap* map, HashyI642 key, void* value) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
@@ -440,7 +498,14 @@ int hashy_map_seti(HashyMap* map, HashyI642 key, void* value) {
   return 1;
 }
 
-int hashy_map_unseti(HashyMap* map, HashyI642 key) {
+int hashy_map_seti(HashyMap* map, HashyI642 key, void* value) {
+  lock_mutex(map);
+  int status = hashy_map_seti_(map, key, value);
+  unlock_mutex(map);
+  return status;
+}
+
+static inline int hashy_map_unseti_(HashyMap* map, HashyI642 key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
@@ -460,7 +525,13 @@ int hashy_map_unseti(HashyMap* map, HashyI642 key) {
 
   return 1;
 }
-void* hashy_map_geti(HashyMap* map, HashyI642 key) {
+int hashy_map_unseti(HashyMap* map, HashyI642 key) {
+  lock_mutex(map);
+  int status = hashy_map_unseti_(map, key);
+  unlock_mutex(map);
+  return status;
+}
+static inline void* hashy_map_geti_(HashyMap* map, HashyI642 key) {
   HASHY_ASSERT_RETURN(map != 0, 0);
   HASHY_ASSERT_RETURN(map->initialized == true, 0);
   HASHY_ASSERT_RETURN(map->buckets.items != 0, 0);
@@ -472,6 +543,13 @@ void* hashy_map_geti(HashyMap* map, HashyI642 key) {
   if (bucket == 0) return 0;
 
   return hashy_bucket_geti(bucket, key, bhash.index, bhash.hash);
+}
+
+void* hashy_map_geti(HashyMap* map, HashyI642 key) {
+  lock_mutex(map);
+  void* ptr = hashy_map_geti_(map, key);
+  unlock_mutex(map);
+  return ptr;
 }
 
 HashyBucket* hashy_map_get_bucketi(HashyMap* map, HashyI642 key) {

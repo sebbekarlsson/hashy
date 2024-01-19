@@ -20,7 +20,7 @@ typedef struct {
 static void test_simple() {
 
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .threadsafe = true });
 
 
   Person* p = calloc(1, sizeof(Person));
@@ -46,7 +46,7 @@ static void test_simple() {
 static void test_simple_i() {
 
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .threadsafe = true });
 
 
   Person* p = calloc(1, sizeof(Person));
@@ -187,7 +187,7 @@ static void test_big() {
 
 
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256 });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .threadsafe = true });
 
   for (int64_t i = 0; i < nrkeys; i++) {
     const char* key = keys[i];
@@ -242,7 +242,7 @@ static void test_big_i() {
 
 
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = nrkeys });
+  hashy_map_init(&map, (HashyConfig){ .capacity = nrkeys, .threadsafe = true });
 
   for (int64_t i = 0; i < nrkeys*9; i++) {
     int64_t key_a = keys[i % nrkeys];
@@ -285,7 +285,7 @@ static void test_big_i() {
 
 static void test_get_without_set() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .threadsafe = true });
 
   void* yo = hashy_map_get(&map, "hello");
 
@@ -296,7 +296,7 @@ static void test_get_without_set() {
 
 static void test_get_without_set_i() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .threadsafe = true });
 
   HashyI642 key = { 311, 2 };
   void* yo = hashy_map_geti(&map, key);
@@ -308,7 +308,7 @@ static void test_get_without_set_i() {
 
 static void test_unset_without_values() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .threadsafe = true });
 
   hashy_map_unset(&map, "hello");
   void* yo = hashy_map_get(&map, "hello");
@@ -319,7 +319,7 @@ static void test_unset_without_values() {
 
 static void test_unset_without_values_i() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 16 });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .threadsafe = true});
 
   HashyI642 key = {4828, 7};
   hashy_map_unseti(&map, key);
@@ -331,7 +331,7 @@ static void test_unset_without_values_i() {
 
 static void test_set_clear_and_get() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .free_values_on_clear = true, .free_values_on_destroy = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .free_values_on_clear = true, .free_values_on_destroy = true, .threadsafe = true });
 
 
   const char* pname = "John Doe";
@@ -366,7 +366,7 @@ static void test_set_clear_and_get() {
 
 static void test_set_clear_and_get_i() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .free_values_on_clear = true, .free_values_on_destroy = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 16, .free_values_on_clear = true, .free_values_on_destroy = true, .threadsafe = true });
 
 
   HashyI642 key = {441, 84};
@@ -416,7 +416,7 @@ typedef struct {
 static void test_set_vectors() {
   int64_t n_vectors = 640;
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_clear = true, .free_values_on_overwrite = true, .free_values_on_unset = true, .free_linked_on_clear = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_clear = true, .free_values_on_overwrite = true, .free_values_on_unset = true, .free_linked_on_clear = true, .threadsafe = true });
 
   for (int j = 0; j < 16; j++) {
     for (int64_t i = 0; i < n_vectors; i++) {
@@ -533,7 +533,7 @@ static void test_set_vectors() {
 
 static void test_set_same() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .threadsafe = true });
 
   const char* message = "hello world";
   char* mystr = strdup(message);
@@ -570,7 +570,7 @@ static void test_set_same() {
 
 static void test_get_keys() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .threadsafe = true });
 
   int64_t nr_items = 125;
 
@@ -603,7 +603,7 @@ static void test_get_keys() {
 
 static void test_iterate() {
   HashyMap map = {0};
-  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_unset = true });
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .free_values_on_destroy = true, .free_values_on_unset = true, .threadsafe = true });
 
   int64_t nr_items = 125;
 
