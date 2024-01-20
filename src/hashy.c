@@ -77,6 +77,7 @@ int hashy_map_init(HashyMap* map, HashyConfig cfg) {
   map->buckets.length = cfg.capacity;
 
 
+  map->is_clear = true;
   map->num_inserts = 0;
   map->num_unsets = 0;
   map->num_collisions = 0;
@@ -121,7 +122,7 @@ int hashy_map_clear(HashyMap* map) {
 
 static inline int hashy_map_clear_(HashyMap* map) {
   HASHY_ASSERT_RETURN(map != 0, 0);
-
+  
   map->num_inserts = 0;
   map->num_collisions = 0;
   map->num_unsets = 0;
@@ -141,7 +142,7 @@ static inline int hashy_map_clear_(HashyMap* map) {
     HASHY_ASSERT_RETURN(last != map, 0);
     HashyMap* next = last;
 
-    while (next != 0) {
+    while (next != 0 && next != map) {
       HashyMap* tmp = next->prev;
       if (tmp == 0) break;
       HASHY_ASSERT_CONTINUE(tmp != next);
@@ -154,8 +155,9 @@ static inline int hashy_map_clear_(HashyMap* map) {
         tmp->next = 0;
         map->num_pages -= 1;
         map->num_pages = MAX(map->num_pages, 0);
-      } else {
+      } else if (next->is_clear == false) {
         hashy_map_clear(next);
+        next->is_clear = true;
       }
 
       next = tmp;
@@ -203,6 +205,7 @@ static inline int hashy_map_destroy_(HashyMap* map) {
 
   map->next = 0;
   map->root = 0;
+  map->is_clear = true;
   
   return 1;
 }
@@ -402,6 +405,8 @@ static inline int hashy_map_set_(HashyMap* map, const char* key, void* value) {
   if (!was_set) {
     map->num_inserts += 1;
   }
+
+  map->is_clear = false;
 
   return 1;
 }

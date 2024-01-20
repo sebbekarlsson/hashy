@@ -216,6 +216,100 @@ static void test_big() {
   hashy_map_destroy(&map);
 }
 
+static void test_mega_big() {
+
+
+  int64_t nrKeys = 50000;
+  int64_t nrValues = 70000;
+
+
+  uint32_t* keys = calloc(nrKeys, sizeof(uint32_t));
+  uint32_t* values = calloc(nrValues, sizeof(uint32_t));
+
+  const char* words[] = {
+    "apple",
+    "pear",
+    "banana",
+    "orange"
+  };
+  
+  int64_t nrWords = sizeof(words) / sizeof(words[0]);
+
+  for (int64_t i = 0; i < nrKeys; i++) {
+    uint32_t n = i + (~i >> 3U);
+    n ^= n << 17U;
+    uint32_t k = ~n;
+    n ^= n >> 13U;
+    n ^= n << 5U;
+    n += (n * 50391U + k * 71U);
+    n *= 1013U;
+    keys[i] = n;
+  }
+
+  for (int64_t i = 0; i < nrValues; i++) {
+    uint32_t n = 10391U+33u*(i + (~i >> 3U));
+    n ^= n << 17U;
+    uint32_t k = ~n;
+    n ^= n >> 13U;
+    n ^= n << 5U;
+    n += (n * 72091U + k * 11U);
+    n *= 5013U;
+    values[i] = n;
+  }
+
+
+  HashyMap map = {0};
+  hashy_map_init(&map, (HashyConfig){ .capacity = 256, .threadsafe = true });
+
+  for (int64_t i = 0; i < nrValues; i++) {
+    uint32_t keyi = keys[i % nrKeys];
+    uint32_t expectedi = values[i % nrValues];
+
+    int64_t a = keyi;
+    int64_t b = expectedi;
+
+    const char* wa = words[a % nrWords];
+    const char* wb = words[b % nrWords];
+    
+    char key[512] = {0};
+    snprintf(key, 512-1, "%s-%d", wa, keyi);
+    char value[512] = {0};
+    snprintf(value, 512-1, "%s-%d", wb, expectedi);
+
+    // printf("%s -> %s\n", key, value);
+    HASHY_TASSERT(hashy_map_set(&map, key, value) != 0);
+
+    HashyBucket* bucket = hashy_map_get_bucket(&map, key);
+
+    HASHY_TASSERT(bucket != 0);
+
+    HASHY_TASSERT(strcmp(bucket->key.value, key) == 0);
+
+    char* back_value = hashy_map_get(&map, key);
+
+    HASHY_TASSERT(back_value != 0);
+    HASHY_TASSERT(strcmp(back_value, value) == 0);
+
+    //hashy_map_unset(&map, key);
+
+    back_value = 0;
+  }
+
+  hashy_map_clear(&map);
+  printf("mega:\n");
+  printf("Collisions: %ld\n", map.num_collisions);
+  printf("Pages: %ld\n", map.num_pages);
+
+  hashy_map_destroy(&map);
+
+
+  free(keys);
+  free(values);
+
+  keys = 0;
+  values = 0;
+}
+
 static void test_big_i() {
 
   int64_t keys[] = {11, 148, 11, 33, 24, 244, 14, 182, 94, 171, 92, 90, 71, 241, 28, 239, 183, 179, 224, 102, 132, 75, 252, 78, 87, 106, 155, 122, 119, 204, 143, 162, 108, 174, 189, 68, 60, 161, 105, 12, 66, 164, 181, 1, 225, 168, 9, 51, 112, 243, 88, 149, 173, 17, 50, 114, 89, 222, 79, 249, 139, 45, 124, 242, 113, 118, 150, 232, 206, 135, 83, 134, 15, 85, 193, 212, 95, 234, 194, 123, 185, 48, 126, 248, 210, 37, 226, 233, 223, 61, 125, 180, 221, 220, 96, 253, 169, 23, 170, 216, 21, 137, 30, 172, 195, 5, 41, 63, 165, 128, 158, 3, 18, 231, 31, 72, 238, 107, 196, 209, 57, 97, 25, 56, 32, 27, 205, 111, 101, 167, 103, 120, 115, 26, 199, 82, 236, 246, 227, 70, 62, 47, 184, 6, 91, 136, 58, 175, 138, 251, 229, 67, 131, 142, 213, 177, 110, 151, 65, 197, 39, 133, 144, 218, 254, 230, 198, 127, 129, 13, 76, 176, 141, 8, 104, 109, 215,
@@ -637,9 +731,14 @@ int main(int argc, char* argv[]) {
 
   srand(time(0));
 
+  test_mega_big();
+
+  //  printf("OK, all tests passed.\n");
+  ////return 0;
 
   test_simple();
   test_big();
+  test_mega_big();
   test_get_without_set();
   test_unset_without_values();
   test_set_clear_and_get();
